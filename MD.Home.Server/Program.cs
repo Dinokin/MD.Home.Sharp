@@ -61,24 +61,31 @@ namespace MD.Home.Server
         public static async Task Main()
         {
             await MangaDexClient.LoginToControl();
-            var hostTask = StartImageServer();
+            var host = GetImageServer();
+            var hostTask = host.StartAsync(_cancellationTokenSource.Token);
 
             while (!_stopRequested)
             {
                 if (hostTask.IsCompleted && !_stopRequested)
-                    hostTask = StartImageServer();
+                {
+                    host.Dispose();
+                    host = GetImageServer();
+                    hostTask = host.StartAsync(_cancellationTokenSource.Token);
+                }
                 
                 await Task.Delay(10);
             }
 
-            await Stop();
+            await host.StopAsync();
+            host.Dispose();
             await MangaDexClient.LogoutFromControl();
+            MangaDexClient.HttpClient.Dispose();
+            _cancellationTokenSource.Dispose();
         }
         
-        public static async Task Stop()
+        public static void Stop()
         {
             _cancellationTokenSource.Cancel();
-            await Task.Delay(TimeSpan.FromSeconds(30));
             _cancellationTokenSource = new CancellationTokenSource();
         }
 
@@ -96,9 +103,9 @@ namespace MD.Home.Server
             if (ClientSettings.MaxCacheSizeInMebibytes < 1024)
                 throw new ClientSettingsException("Invalid max cache size, must be >= 1024 MiB (1GiB)");
         }
-        
-        private static async Task StartImageServer() =>
-            await Host.CreateDefaultBuilder()
+
+        private static IHost GetImageServer() => 
+            Host.CreateDefaultBuilder()
                 .ConfigureHostConfiguration(builder => builder.AddConfiguration(Configuration, false))
                 .UseSerilog((_, configuration) =>
                 {
@@ -118,16 +125,16 @@ namespace MD.Home.Server
                     builder.ConfigureKestrel(options =>
                     {
                         options.AddServerHeader = false;
-                        
+
                         /*
                          * var certificate = new X509Certificate2(Security.GetCertificatesBytes(MangaDexClient.RemoteSettings.TlsCertificate.Certificate));
                          * Workaround for .NET bug https://github.com/dotnet/runtime/issues/23749
                          */
                         using var certificate = new X509Certificate2(Security.GetCertificateBytesFromBase64(MangaDexClient.RemoteSettings!.TlsCertificate!.Certificate!));
                         using var provider = new RSACryptoServiceProvider();
-                        
+
                         provider.ImportRSAPrivateKey(MemoryMarshal.AsBytes(Security.GetCertificateBytesFromBase64(MangaDexClient.RemoteSettings!.TlsCertificate!.PrivateKey).AsSpan()), out _);
-                        
+
                         if (!string.IsNullOrWhiteSpace(ClientSettings.ClientHostname))
                             options.Listen(IPAddress.Parse(ClientSettings.ClientHostname), ClientSettings.ClientPort,
                                 listenOptions =>
@@ -144,6 +151,6 @@ namespace MD.Home.Server
 
                     builder.ConfigureServices(services => services.AddSingleton(_ => MangaDexClient));
                     builder.UseStartup<ImageServer>();
-                }).Build().RunAsync(_cancellationTokenSource.Token);
+                }).Build();
     }
 }

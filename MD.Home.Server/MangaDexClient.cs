@@ -115,9 +115,13 @@ namespace MD.Home.Server
 
                 if (remoteSettings?.LatestBuild > Constants.ClientBuild)
                     _logger.Warning($"Outdated build detected! Latest: {remoteSettings.LatestBuild}, Current: {Constants.ClientBuild}");
-                
-                if (RemoteSettings.TlsCertificate?.Certificate != remoteSettings?.TlsCertificate?.Certificate) 
-                    await Program.Stop();
+
+                if (RemoteSettings.TlsCertificate?.Certificate != remoteSettings?.TlsCertificate?.Certificate)
+                {
+                    _logger.Information("Restarting ImageServer to refresh certificates");
+                    
+                    Program.Stop();
+                }
 
                 _remoteSettings = remoteSettings;
             }
