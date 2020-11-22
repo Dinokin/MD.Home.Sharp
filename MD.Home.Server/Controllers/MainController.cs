@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Globalization;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -123,11 +124,22 @@ namespace MD.Home.Server.Controllers
         {
             _logger.Information($"Request for {url} missed cache");
 
-            var response = await _mangaDexClient.HttpClient.GetAsync(_mangaDexClient.RemoteSettings.ImageServer + url);
+            HttpResponseMessage response;
+
+            try
+            {
+                response = await _mangaDexClient.HttpClient.GetAsync(_mangaDexClient.RemoteSettings.ImageServer + url);
+            }
+            catch
+            {
+                _logger.Error($"Upstream query for {url} failed without status");
+                
+                return StatusCode(500);
+            }
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.Information($"Upstream query for {{url}} errored with status {(int) response.StatusCode}");
+                _logger.Information($"Upstream query for {url} errored with status {(int) response.StatusCode}");
 
                 return StatusCode((int) response.StatusCode);
             }

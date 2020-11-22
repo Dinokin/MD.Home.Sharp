@@ -94,7 +94,18 @@ namespace MD.Home.Server
             _logger.Information("Pinging the control server");
             
             var message = JsonSerializer.Serialize(GetPingParameters());
-            var response = await HttpClient.PostAsync($"{Constants.ServerAddress}ping", new StringContent(message, Encoding.UTF8, "application/json"));
+            HttpResponseMessage response;
+
+            try
+            {
+                response = await HttpClient.PostAsync($"{Constants.ServerAddress}ping", new StringContent(message, Encoding.UTF8, "application/json"));
+            }
+            catch
+            {
+                _logger.Error("Failed to ping control due to unknown reasons");
+
+                return;
+            }
 
             if (response.IsSuccessStatusCode)
             {
@@ -138,7 +149,7 @@ namespace MD.Home.Server
             {
                 while (true)
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(45));
+                    await Task.Delay(TimeSpan.FromSeconds(30));
 
                     await PingControl();
                 }
