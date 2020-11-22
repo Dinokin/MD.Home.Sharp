@@ -115,6 +115,15 @@ namespace MD.Home.Server.Cache {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to PRAGMA wal_checkpoint(PASSIVE);.
+        /// </summary>
+        internal static string TriggerCheckpoint {
+            get {
+                return ResourceManager.GetString("TriggerCheckpoint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to UPDATE cache_entries SET last_accessed = $last_accessed WHERE id = $id;.
         /// </summary>
         internal static string UpdateEntryLastAccessDate {

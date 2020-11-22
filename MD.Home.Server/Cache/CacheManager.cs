@@ -81,10 +81,7 @@ namespace MD.Home.Server.Cache
                 PostEvictionCallbacks = { new PostEvictionCallbackRegistration() }
             };
 
-            entryOptions.PostEvictionCallbacks.First().EvictionCallback += (key, value, _, _) =>
-            {
-                _cacheEntryDao.UpdateEntryLastAccessDate((Guid) key, ((CacheEntry) value).LastAccessed);
-            };
+            entryOptions.PostEvictionCallbacks.First().EvictionCallback += (key, value, _, _) => _cacheEntryDao.UpdateEntryLastAccessDate((Guid) key, ((CacheEntry) value).LastAccessed);
             _memoryCache.Set(id, entry, entryOptions);
 
             return entry;
@@ -111,16 +108,19 @@ namespace MD.Home.Server.Cache
             
             _memoryCache.Compact(100);
             _memoryCache.Dispose();
-            TrimDatabase();
+            TrimDatabase(true);
             _cacheEntryDao.Dispose();
         }
 
-        private void TrimDatabase()
+        private void TrimDatabase(bool withVacuum = false)
         {
-            if (_cacheEntryDao.TotalSizeOfContents is var totalSizeOfContents && totalSizeOfContents  > _maxCacheSize)
+            if (_cacheEntryDao.TotalSizeOfContents is var totalSizeOfContents && totalSizeOfContents > _maxCacheSize)
                 ReduceCacheSize(totalSizeOfContents - _maxCacheSize);
+
+            if (withVacuum)
+                _cacheEntryDao.VacuumDatabase();
             
-            _cacheEntryDao.VacuumDatabase();
+            _cacheEntryDao.TriggerCheckpoint();
         }
         
         private void ReduceCacheSize(ulong size)

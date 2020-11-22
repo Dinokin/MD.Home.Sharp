@@ -19,7 +19,10 @@
         <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
     </resheader>
     <data name="CreateDatabase" xml:space="preserve">
-        <value>PRAGMA journal_mode='wal'; PRAGMA wal_autocheckpoint=50000; PRAGMA wal_checkpoint(TRUNCATE); PRAGMA cache_size=50000; CREATE TABLE cache_entries (id CHARACTER(32) PRIMARY KEY, content_type VARCHAR(20) NOT NULL, last_modified DATETIME NOT NULL, last_accessed DATETIME NOT NULL, size UNSIGNED BIG INT NOT NULL, content BLOB NOT NULL);</value>>
+        <value>PRAGMA journal_mode=WAL; PRAGMA wal_autocheckpoint=0; PRAGMA cache_size=50000; CREATE TABLE cache_entries (id CHARACTER(32) PRIMARY KEY, content_type VARCHAR(20) NOT NULL, last_modified DATETIME NOT NULL, last_accessed DATETIME NOT NULL, size UNSIGNED BIG INT NOT NULL, content BLOB NOT NULL);</value>>
+    </data>
+    <data name="TriggerCheckpoint">
+        <value>PRAGMA wal_checkpoint(PASSIVE);</value>
     </data>
     <data name="VacuumDatabase" xml:space="preserve">
         <value>VACUUM main;</value>

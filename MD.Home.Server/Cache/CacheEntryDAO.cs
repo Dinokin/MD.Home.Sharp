@@ -113,6 +113,16 @@ namespace MD.Home.Server.Cache
             ExecuteQueryWithoutResult(command);
         }
 
+        public void TriggerCheckpoint()
+        {
+            if (_isDisposed)
+                throw new ObjectDisposedException($"This instance of {nameof(CacheEntryDao)} has been disposed.");
+            
+            using var command = new SqliteCommand(Queries.TriggerCheckpoint);
+            
+            ExecuteQueryWithoutResult(command);
+        }
+
         public void Dispose()
         {
             lock (this)
