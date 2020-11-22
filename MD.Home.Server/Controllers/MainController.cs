@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Globalization;
 using System.Linq;
-using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -19,14 +18,12 @@ namespace MD.Home.Server.Controllers
     {
         private readonly CacheManager _cacheManager;
         private readonly MangaDexClient _mangaDexClient;
-        private readonly HttpClient _httpClient;
         private readonly ILogger _logger;
 
-        public MainController(CacheManager cacheManager, MangaDexClient mangaDexClient, HttpClient httpClient, ILogger logger)
+        public MainController(CacheManager cacheManager, MangaDexClient mangaDexClient, ILogger logger)
         {
             _cacheManager = cacheManager;
             _mangaDexClient = mangaDexClient;
-            _httpClient = httpClient;
             _logger = logger;
         }
 
@@ -102,7 +99,7 @@ namespace MD.Home.Server.Controllers
                     return StatusCode(403);
                 }
 
-                if (DateTimeOffset.UtcNow > serializedToken.ExpirationDate)
+                if (DateTime.UtcNow > serializedToken.ExpirationDate.UtcDateTime)
                 {
                     _logger.Information($"Request for {url} rejected for expired token");
 
@@ -126,7 +123,7 @@ namespace MD.Home.Server.Controllers
         {
             _logger.Information($"Request for {url} missed cache");
 
-            var response = await _httpClient.GetAsync(_mangaDexClient.RemoteSettings.ImageServer + url);
+            var response = await _mangaDexClient.HttpClient.GetAsync(_mangaDexClient.RemoteSettings.ImageServer + url);
 
             if (!response.IsSuccessStatusCode)
             {

@@ -19,6 +19,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Core;
+using Serilog.Events;
 using Constants = MD.Home.Server.Others.Constants;
 
 namespace MD.Home.Server
@@ -26,7 +27,6 @@ namespace MD.Home.Server
     public static class Program
     {
         private static readonly ClientSettings ClientSettings = new();
-        private static readonly HttpClient HttpClient = new();
         private static readonly MangaDexClient MangaDexClient;
         private static readonly IConfiguration? Configuration;
 
@@ -45,11 +45,15 @@ namespace MD.Home.Server
                 .ReadFrom.Configuration(Configuration)
                 .Enrich.FromLogContext()
                 .MinimumLevel.Information()
+                .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+                .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+                .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
+                .MinimumLevel.Override("System.Net.Http.HttpClient", LogEventLevel.Warning)
                 .WriteTo.Console()
-                .WriteTo.File(Constants.ClientLogFile, fileSizeLimitBytes: 1024 * 1000 * 10, rollOnFileSizeLimit: true, shared: true, flushToDiskInterval: TimeSpan.FromSeconds(3))
+                .WriteTo.File(Constants.ClientLogFile, fileSizeLimitBytes: 1024 * 1000 * 10, rollOnFileSizeLimit: true, shared: true, flushToDiskInterval: TimeSpan.FromSeconds(5))
                 .CreateLogger();
             
-            MangaDexClient = new MangaDexClient(ClientSettings, HttpClient, logger);
+            MangaDexClient = new MangaDexClient(ClientSettings, new HttpClient(), logger);
 
             Console.CancelKeyPress += (_, _) => _stopRequested = true;
         }
@@ -102,8 +106,12 @@ namespace MD.Home.Server
                         .ReadFrom.Configuration(Configuration)
                         .Enrich.FromLogContext()
                         .MinimumLevel.Information()
+                        .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+                        .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+                        .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
+                        .MinimumLevel.Override("System.Net.Http.HttpClient", LogEventLevel.Warning)
                         .WriteTo.Console()
-                        .WriteTo.File(Constants.ServerLogFile, fileSizeLimitBytes: 1024 * 1000 * 10, rollOnFileSizeLimit: true, shared: true, flushToDiskInterval: TimeSpan.FromSeconds(3));
+                        .WriteTo.File(Constants.ServerLogFile, fileSizeLimitBytes: 1024 * 1000 * 10, rollOnFileSizeLimit: true, shared: true, flushToDiskInterval: TimeSpan.FromSeconds(5));
                 })
                 .ConfigureWebHostDefaults(builder =>
                 {
@@ -134,7 +142,6 @@ namespace MD.Home.Server
                                 });
                     });
 
-                    builder.ConfigureServices(services => services.AddSingleton(_ => HttpClient));
                     builder.ConfigureServices(services => services.AddSingleton(_ => MangaDexClient));
                     builder.UseStartup<ImageServer>();
                 }).Build().RunAsync(_cancellationTokenSource.Token);

@@ -13,6 +13,7 @@ namespace MD.Home.Server.Configuration
         public string Url { get; }
         public string ImageServer { get; }
         public string TokenKey { get; }
+        [JsonIgnore]
         public byte[] DecodedToken { get; }
         [JsonPropertyName("compromised")]
         public bool IsCompromised { get; }

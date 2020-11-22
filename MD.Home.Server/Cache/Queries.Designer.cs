@@ -22,21 +22,21 @@ namespace MD.Home.Server.Cache {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    public class Queries {
+    internal class Queries {
         
         private static global::System.Resources.ResourceManager resourceMan;
         
         private static global::System.Globalization.CultureInfo resourceCulture;
         
         [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        public Queries() {
+        internal Queries() {
         }
         
         /// <summary>
         ///   Returns the cached ResourceManager instance used by this class.
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        public static global::System.Resources.ResourceManager ResourceManager {
+        internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
                     global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("MD.Home.Server.Cache.Queries", typeof(Queries).Assembly);
@@ -51,7 +51,7 @@ namespace MD.Home.Server.Cache {
         ///   resource lookups using this strongly typed resource class.
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        public static global::System.Globalization.CultureInfo Culture {
+        internal static global::System.Globalization.CultureInfo Culture {
             get {
                 return resourceCulture;
             }
@@ -63,7 +63,7 @@ namespace MD.Home.Server.Cache {
         /// <summary>
         ///   Looks up a localized string similar to SELECT AVG(size) FROM cache_entries;.
         /// </summary>
-        public static string AverageSizeOfContents {
+        internal static string AverageSizeOfContents {
             get {
                 return ResourceManager.GetString("AverageSizeOfContents", resourceCulture);
             }
@@ -72,7 +72,7 @@ namespace MD.Home.Server.Cache {
         /// <summary>
         ///   Looks up a localized string similar to &gt;.
         /// </summary>
-        public static string CreateDatabase {
+        internal static string CreateDatabase {
             get {
                 return ResourceManager.GetString("CreateDatabase", resourceCulture);
             }
@@ -81,7 +81,7 @@ namespace MD.Home.Server.Cache {
         /// <summary>
         ///   Looks up a localized string similar to DELETE FROM cache_entries WHERE id IN (SELECT id FROM cache_entries ORDER BY last_accessed LIMIT $amount);.
         /// </summary>
-        public static string DeleteLeastAccessedEntries {
+        internal static string DeleteLeastAccessedEntries {
             get {
                 return ResourceManager.GetString("DeleteLeastAccessedEntries", resourceCulture);
             }
@@ -90,7 +90,7 @@ namespace MD.Home.Server.Cache {
         /// <summary>
         ///   Looks up a localized string similar to SELECT id, content_type, last_modified, last_accessed, size, content FROM cache_entries WHERE id = $id;.
         /// </summary>
-        public static string GetEntryById {
+        internal static string GetEntryById {
             get {
                 return ResourceManager.GetString("GetEntryById", resourceCulture);
             }
@@ -99,7 +99,7 @@ namespace MD.Home.Server.Cache {
         /// <summary>
         ///   Looks up a localized string similar to INSERT INTO cache_entries (id, content_type, last_modified, last_accessed, size, content) VALUES ($id, $content_type, $last_modified, $last_accessed, $size, $content);.
         /// </summary>
-        public static string InsertEntry {
+        internal static string InsertEntry {
             get {
                 return ResourceManager.GetString("InsertEntry", resourceCulture);
             }
@@ -108,7 +108,7 @@ namespace MD.Home.Server.Cache {
         /// <summary>
         ///   Looks up a localized string similar to SELECT SUM(size) FROM cache_entries;.
         /// </summary>
-        public static string TotalSizeOfContents {
+        internal static string TotalSizeOfContents {
             get {
                 return ResourceManager.GetString("TotalSizeOfContents", resourceCulture);
             }
@@ -117,7 +117,7 @@ namespace MD.Home.Server.Cache {
         /// <summary>
         ///   Looks up a localized string similar to UPDATE cache_entries SET last_accessed = $last_accessed WHERE id = $id;.
         /// </summary>
-        public static string UpdateEntryLastAccessDate {
+        internal static string UpdateEntryLastAccessDate {
             get {
                 return ResourceManager.GetString("UpdateEntryLastAccessDate", resourceCulture);
             }
@@ -126,7 +126,7 @@ namespace MD.Home.Server.Cache {
         /// <summary>
         ///   Looks up a localized string similar to VACUUM main;.
         /// </summary>
-        public static string VacuumDatabase {
+        internal static string VacuumDatabase {
             get {
                 return ResourceManager.GetString("VacuumDatabase", resourceCulture);
             }

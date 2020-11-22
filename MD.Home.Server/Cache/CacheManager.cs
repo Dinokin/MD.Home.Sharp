@@ -39,7 +39,7 @@ namespace MD.Home.Server.Cache
                         else
                             Thread.Sleep(TimeSpan.FromSeconds(1));
 
-                        if (count != 10)
+                        if (count <= 50)
                             continue;
 
                         TrimDatabase();

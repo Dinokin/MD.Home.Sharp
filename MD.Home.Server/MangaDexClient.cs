@@ -17,6 +17,7 @@ namespace MD.Home.Server
     {
         public ClientSettings ClientSettings { get; }
         public JsonSerializerOptions JsonSerializerOptions { get; }
+        public HttpClient HttpClient { get; }
 
         public RemoteSettings RemoteSettings
         {
@@ -28,8 +29,7 @@ namespace MD.Home.Server
                 return _remoteSettings;
             }
         }
-
-        private readonly HttpClient _httpClient;
+        
         private readonly Logger _logger;
 
         private RemoteSettings? _remoteSettings;
@@ -40,7 +40,7 @@ namespace MD.Home.Server
             var snakePolicy = new SnakeCaseNamingPolicy();
             
             ClientSettings = clientSettings;
-            _httpClient = httpClient;
+            HttpClient = httpClient;
             JsonSerializerOptions = new JsonSerializerOptions
             {
                 PropertyNamingPolicy = snakePolicy,
@@ -57,7 +57,7 @@ namespace MD.Home.Server
             _logger.Information("Connecting to the control server");
 
             var message = JsonSerializer.Serialize(GetPingParameters());
-            var response = await _httpClient.PostAsync($"{Constants.ServerAddress}ping", new StringContent(message, Encoding.UTF8, "application/json"));
+            var response = await HttpClient.PostAsync($"{Constants.ServerAddress}ping", new StringContent(message, Encoding.UTF8, "application/json"));
 
             if (response.IsSuccessStatusCode)
             {
@@ -80,7 +80,7 @@ namespace MD.Home.Server
             _logger.Information("Disconnecting from the control server");
 
             var message = JsonSerializer.Serialize(new Dictionary<string, object> { {"secret", ClientSettings.ClientSecret} });
-            var response = await _httpClient.PostAsync($"{Constants.ServerAddress}stop", new StringContent(message, Encoding.UTF8, "application/json"));
+            var response = await HttpClient.PostAsync($"{Constants.ServerAddress}stop", new StringContent(message, Encoding.UTF8, "application/json"));
             
             if (!response.IsSuccessStatusCode)
                 throw new AuthenticationException();
@@ -94,7 +94,7 @@ namespace MD.Home.Server
             _logger.Information("Pinging the control server");
             
             var message = JsonSerializer.Serialize(GetPingParameters());
-            var response = await _httpClient.PostAsync($"{Constants.ServerAddress}ping", new StringContent(message, Encoding.UTF8, "application/json"));
+            var response = await HttpClient.PostAsync($"{Constants.ServerAddress}ping", new StringContent(message, Encoding.UTF8, "application/json"));
 
             if (response.IsSuccessStatusCode)
             {
