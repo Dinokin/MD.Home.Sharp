@@ -1,0 +1,8 @@
+{
+  "ClientHostname": "0.0.0.0",
+  "ClientPort": 5007,
+  "ClientExternalPort": 5007,
+  "ClientSecret": "",
+  "MaxCacheSizeInMebibytes": 10000,
+  "MaxEntriesInMemory": 100
+}
