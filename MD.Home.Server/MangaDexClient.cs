@@ -47,6 +47,8 @@ namespace MD.Home.Server
                 DictionaryKeyPolicy = snakePolicy
             };
             _logger = logger;
+            
+            HttpClient.Timeout = TimeSpan.FromSeconds(90);
         }
 
         public async Task LoginToControl()

@@ -56,7 +56,7 @@ namespace MD.Home.Server.Cache
 
         private SqliteConnection BuildConnection()
         {
-            var connection = new SqliteConnection(_connectionString) {DefaultTimeout = 120};
+            var connection = new SqliteConnection(_connectionString) {DefaultTimeout = 90};
 
             connection.StateChange += (sender, _) => ReturnConnection((SqliteConnection) sender);
 
