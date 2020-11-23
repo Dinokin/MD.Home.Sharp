@@ -51,7 +51,6 @@ namespace MD.Home.Server
                 .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
                 .MinimumLevel.Override("System.Net.Http.HttpClient", LogEventLevel.Warning)
                 .WriteTo.Console()
-                .WriteTo.File(Constants.ClientLogFile, fileSizeLimitBytes: 1024 * 1000 * 10, rollOnFileSizeLimit: true, shared: true, flushToDiskInterval: TimeSpan.FromSeconds(5))
                 .CreateLogger();
             
             MangaDexClient = new MangaDexClient(ClientSettings, new HttpClient(), logger);
@@ -129,8 +128,7 @@ namespace MD.Home.Server
                         .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
                         .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
                         .MinimumLevel.Override("System.Net.Http.HttpClient", LogEventLevel.Warning)
-                        .WriteTo.Console()
-                        .WriteTo.File(Constants.ServerLogFile, fileSizeLimitBytes: 1024 * 1000 * 10, rollOnFileSizeLimit: true, shared: true, flushToDiskInterval: TimeSpan.FromSeconds(5));
+                        .WriteTo.Console();
                 })
                 .ConfigureWebHostDefaults(builder =>
                 {
