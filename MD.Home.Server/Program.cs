@@ -18,7 +18,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
-using Serilog.Core;
 using Serilog.Events;
 using Constants = MD.Home.Server.Others.Constants;
 
@@ -29,6 +28,7 @@ namespace MD.Home.Server
         private static readonly ClientSettings ClientSettings = new();
         private static readonly MangaDexClient MangaDexClient;
         private static readonly IConfiguration? Configuration;
+        private static readonly ILogger Logger;
 
         private static CancellationTokenSource _cancellationTokenSource = new();
 
@@ -42,18 +42,18 @@ namespace MD.Home.Server
             
             ValidateSettings();
             
-            Logger logger = new LoggerConfiguration()
+            Logger = new LoggerConfiguration()
                 .ReadFrom.Configuration(Configuration)
                 .Enrich.FromLogContext()
                 .MinimumLevel.Information()
                 .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
                 .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
-                .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
+                .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Warning)
                 .MinimumLevel.Override("System.Net.Http.HttpClient", LogEventLevel.Warning)
                 .WriteTo.Console()
                 .CreateLogger();
             
-            MangaDexClient = new MangaDexClient(ClientSettings, new HttpClient(), logger);
+            MangaDexClient = new MangaDexClient(ClientSettings, new HttpClient(), Logger);
 
             Console.CancelKeyPress += (_, _) => _stopRequested = true;
         }
@@ -61,7 +61,8 @@ namespace MD.Home.Server
         public static async Task Main()
         {
             await MangaDexClient.LoginToControl();
-
+            
+            Logger.Information("Starting image server");
             var host = GetImageServer();
             await host.StartAsync();
 
@@ -69,6 +70,8 @@ namespace MD.Home.Server
             {
                 if (!_stopRequested && _restartRequested)
                 {
+                    Logger.Information("Restarting image server");
+
                     await MangaDexClient.LogoutFromControl();
                     await Task.Delay(TimeSpan.FromSeconds(MangaDexClient.ClientSettings.GracefulShutdownWaitSeconds));
                     await host.StopAsync();
@@ -82,6 +85,7 @@ namespace MD.Home.Server
                 
                 await Task.Delay(10);
             }
+            Logger.Information("Stopping image server");
 
             await MangaDexClient.LogoutFromControl();
             await Task.Delay(TimeSpan.FromSeconds(MangaDexClient.ClientSettings.GracefulShutdownWaitSeconds));
@@ -126,7 +130,7 @@ namespace MD.Home.Server
                         .MinimumLevel.Information()
                         .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
                         .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
-                        .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
+                        .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Warning)
                         .MinimumLevel.Override("System.Net.Http.HttpClient", LogEventLevel.Warning)
                         .WriteTo.Console();
                 })

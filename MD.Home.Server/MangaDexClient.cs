@@ -8,7 +8,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using MD.Home.Server.Configuration;
 using MD.Home.Server.Serialization;
-using Serilog.Core;
+using Serilog;
 using Constants = MD.Home.Server.Others.Constants;
 
 namespace MD.Home.Server
@@ -30,13 +30,13 @@ namespace MD.Home.Server
             }
         }
         
-        private readonly Logger _logger;
+        private readonly ILogger _logger;
 
         private RemoteSettings? _remoteSettings;
         private Task? _backgroundTask;
         private bool _canPing;
 
-        public MangaDexClient(ClientSettings clientSettings, HttpClient httpClient, Logger logger)
+        public MangaDexClient(ClientSettings clientSettings, HttpClient httpClient, ILogger logger)
         {
             var snakePolicy = new SnakeCaseNamingPolicy();
             

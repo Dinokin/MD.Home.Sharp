@@ -15,6 +15,7 @@ using Sodium;
 namespace MD.Home.Server.Controllers
 {
     [Route("")]
+    [ResponseCache(Duration = 1209600)]
     public class MainController : Controller
     {
         private readonly CacheManager _cacheManager;
@@ -29,19 +30,15 @@ namespace MD.Home.Server.Controllers
         }
 
         [HttpGet("data/{chapterId:guid}/{name}")]
-        [ResponseCache(Duration = 1209600)]
         public async Task<IActionResult> FetchNormalImage(Guid chapterId, string name) => await FetchImage(chapterId, name, false, null);
 
         [HttpGet("data-saver/{chapterId:guid}/{name}")]
-        [ResponseCache(Duration = 1209600)]
         public async Task<IActionResult> FetchDataSaverImage(Guid chapterId, string name) => await FetchImage(chapterId, name, true, null);
         
         [HttpGet("{token}/data/{chapterId:guid}/{name}")]
-        [ResponseCache(Duration = 1209600)]
         public async Task<IActionResult> FetchTokenizedNormalImage(string token, Guid chapterId, string name) => await FetchImage(chapterId, name, false, token);
 
         [HttpGet("{token}/data-saver/{chapterId:guid}/{name}")]
-        [ResponseCache(Duration = 1209600)]
         public async Task<IActionResult> FetchTokenizedDataSaverImage(string token, Guid chapterId, string name) => await FetchImage(chapterId, name, true, token); 
         
         private async Task<IActionResult> FetchImage(Guid chapterId, string name, bool dataSaver, string? token)
@@ -77,7 +74,7 @@ namespace MD.Home.Server.Controllers
 
                 try
                 {
-                    decodedToken = SecretBox.Open(decodedToken[24..], decodedToken[..23], _mangaDexClient.RemoteSettings.DecodedToken);
+                    decodedToken = SecretBox.Open(decodedToken[24..], decodedToken[..24], _mangaDexClient.RemoteSettings.DecodedToken);
                     serializedToken = JsonSerializer.Deserialize<Token>(Encoding.UTF8.GetString(decodedToken), _mangaDexClient.JsonSerializerOptions);
                 }
                 catch

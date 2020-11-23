@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using MD.Home.Server.Cache;
+using MD.Home.Server.Filters;
 using MD.Home.Server.Others;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
-using Serilog.Context;
 
 namespace MD.Home.Server
 {
@@ -16,7 +15,12 @@ namespace MD.Home.Server
     {
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers();
+            services.AddControllers(options =>
+            {
+                options.Filters.Add(typeof(HeaderInjector));
+                options.Filters.Add(typeof(ExceptionFilter));
+            });
+            
             services.AddSingleton<CacheManager>();
         }
 
@@ -24,19 +28,24 @@ namespace MD.Home.Server
         {
             application.Use(async (context, func) =>
             {
-                var startTime = DateTime.UtcNow;
-                
-                using var ipAddressProperty = LogContext.PushProperty("IPAddress", context.Connection.RemoteIpAddress);
-                context.Response.Headers.Add("timing-allow-origin", "https://mangadex.org");
-                context.Response.Headers.Add("Server", $"MD.Home.Sharp 1.0.0 {Constants.ClientBuild}");
-                    
-                await func();
+                context.Items.Add("StartTime", DateTime.UtcNow);
 
-                var timeTaken = (DateTime.UtcNow - startTime).TotalMilliseconds;
-                context.Response.Headers.Add("X-Time-Taken", timeTaken.ToString(CultureInfo.InvariantCulture));
-                using var timeTakeProperty = LogContext.PushProperty("TimeTaken", timeTaken);
+                await func();
             });
-            application.UseSerilogRequestLogging(options => options.MessageTemplate = "HTTP {RequestPath} from {IPAddress} responded {StatusCode} in {TimeTaken:0.0000} ms");
+
+            application.UseSerilogRequestLogging(options =>
+            {
+                options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} from {IPAddress} responded {StatusCode} in {Elapsed:0.0000} ms with TTFB in {TTFB:0.0000} ms";
+
+                options.EnrichDiagnosticContext = (context, httpContext) =>
+                {
+                    var ttfbAvailable = httpContext.Items.TryGetValue("TTFB", out var value);
+                    
+                    context.Set("IPAddress", httpContext.Connection.RemoteIpAddress);
+                    context.Set("TTFB", ttfbAvailable ? (double) value! : -1); 
+                };
+            });
+            
             application.UseRouting();
             application.UseCors(builder => builder.WithOrigins("https://mangadex.org").WithHeaders("*").WithMethods("GET"));
             application.UseEndpoints(builder => builder.MapControllers());
