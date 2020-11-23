@@ -4,5 +4,6 @@
   "ClientExternalPort": 5007,
   "ClientSecret": "",
   "MaxCacheSizeInMebibytes": 10000,
-  "MaxEntriesInMemory": 100
+  "MaxEntriesInMemory": 500,
+  "GracefulShutdownWaitSeconds": 60
 }

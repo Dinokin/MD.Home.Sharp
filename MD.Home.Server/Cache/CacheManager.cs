@@ -22,7 +22,7 @@ namespace MD.Home.Server.Cache
             _memoryCache = new MemoryCache(new MemoryCacheOptions { SizeLimit = mangaDexClient.ClientSettings.MaxEntriesInMemory });
             _maxCacheSize = Convert.ToUInt64(mangaDexClient.ClientSettings.MaxCacheSizeInMebibytes * 1024 * 1024);
 
-            var thread = new Thread(() =>
+            var writer = new Thread(() =>
             {
                 var count = 0;
                 
@@ -52,7 +52,7 @@ namespace MD.Home.Server.Cache
                 }
             });
             
-            thread.Start();
+            writer.Start();
         }
 
         public CacheEntry? GetEntry(Guid id)
@@ -77,7 +77,7 @@ namespace MD.Home.Server.Cache
             var entryOptions = new MemoryCacheEntryOptions
             {
                 Size = 1,
-                SlidingExpiration = TimeSpan.FromMinutes(10),
+                SlidingExpiration = TimeSpan.FromHours(1),
                 PostEvictionCallbacks = { new PostEvictionCallbackRegistration() }
             };
 
@@ -108,7 +108,7 @@ namespace MD.Home.Server.Cache
             
             _memoryCache.Compact(100);
             _memoryCache.Dispose();
-            TrimDatabase(true);
+            TrimDatabase();
             _cacheEntryDao.Dispose();
         }
 
@@ -127,7 +127,7 @@ namespace MD.Home.Server.Cache
         {
             var averageSize = _cacheEntryDao.AverageSizeOfContents;
 
-            _cacheEntryDao.DeleteLeastAccessedEntries(averageSize >= size ? 1 : Convert.ToUInt32(Math.Ceiling(size / averageSize)));
+            _cacheEntryDao.DeleteLeastAccessedEntries(averageSize >= size ? 1 : Convert.ToUInt32(Math.Ceiling(size / averageSize) * 2));
         }
     }
 }

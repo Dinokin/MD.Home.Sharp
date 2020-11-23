@@ -8,13 +8,12 @@ namespace MD.Home.Server.Configuration
 {
     [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
     [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
+    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
     public sealed class RemoteSettings
     {
         public string Url { get; }
         public string ImageServer { get; }
         public string TokenKey { get; }
-        [JsonIgnore]
-        public byte[] DecodedToken { get; }
         [JsonPropertyName("compromised")]
         public bool IsCompromised { get; }
         [JsonPropertyName("paused")]
@@ -23,6 +22,9 @@ namespace MD.Home.Server.Configuration
         public ushort LatestBuild { get; }
         [JsonPropertyName("tls")]
         public TlsCertificate? TlsCertificate { get; }
+        
+        [JsonIgnore]
+        public byte[] DecodedToken { get; }
         
         public RemoteSettings(string url, string imageServer, string tokenKey, bool isCompromised, bool isPaused, bool forceTokens, ushort latestBuild, TlsCertificate? tlsCertificate)
         {
@@ -35,7 +37,7 @@ namespace MD.Home.Server.Configuration
             LatestBuild = latestBuild;
             TlsCertificate = tlsCertificate;
 
-            DecodedToken = tokenKey.DecodeToken();
+            DecodedToken = tokenKey.DecodeFromBase64Url();
         }
 
         public override string ToString()

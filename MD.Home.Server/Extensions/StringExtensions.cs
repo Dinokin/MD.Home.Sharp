@@ -10,6 +10,10 @@ namespace MD.Home.Server.Extensions
     {
         public static bool IsValidSecret(this string source) => !string.IsNullOrWhiteSpace(source) && Regex.IsMatch(source, "^[a-zA-Z0-9]{52}$");
 
+        public static bool IsImageMimeType(this string? source) => !string.IsNullOrWhiteSpace(source) && Regex.IsMatch(source, "^image/");
+
+        public static byte[] DecodeFromBase64Url(this string source) => string.IsNullOrWhiteSpace(source) ? Array.Empty<byte>() : WebEncoders.Base64UrlDecode(source);
+
         public static Guid GetHashAsGuid(this string source)
         {
             using var hasher = MD5.Create();
@@ -21,9 +25,5 @@ namespace MD.Home.Server.Extensions
             
             return Guid.Parse(sb.ToString().ToLowerInvariant());
         }
-        
-        public static byte[] DecodeToken(this string source) => string.IsNullOrWhiteSpace(source) ? Array.Empty<byte>() : WebEncoders.Base64UrlDecode(source);
-
-        public static bool IsImageMimeType(this string? source) => !string.IsNullOrWhiteSpace(source) && Regex.IsMatch(source, "^image/");
     }
 }

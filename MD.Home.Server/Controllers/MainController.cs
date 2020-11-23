@@ -64,7 +64,7 @@ namespace MD.Home.Server.Controllers
                     return StatusCode(403);
                 }
                 
-                var decodedToken = token.DecodeToken();
+                var decodedToken = token.DecodeFromBase64Url();
 
                 if (decodedToken.Length < 24)
                 {
@@ -73,11 +73,8 @@ namespace MD.Home.Server.Controllers
                     return StatusCode(403);
                 }
 
-                var nonce = new byte[24];
-                Array.Copy(decodedToken, nonce, 24);
-
-                var cipherText = new byte[decodedToken.Length - 24];
-                Array.Copy(decodedToken, 24, cipherText, 0, decodedToken.Length - 24);
+                var nonce = decodedToken[..^23];
+                var cipherText = decodedToken[24..^(decodedToken.Length - 1)];
 
                 Token? serializedToken;
 
@@ -144,27 +141,35 @@ namespace MD.Home.Server.Controllers
                 return StatusCode((int) response.StatusCode);
             }
 
+            var content = await response.Content.ReadAsByteArrayAsync();
             var contentType = response.Content.Headers.ContentType?.MediaType;
             var contentLength = response.Content.Headers.ContentLength;
             var lastModified = response.Content.Headers.LastModified;
 
+            if (content.Length == 0)
+            {
+                _logger.Warning($"Upstream query for {url} returned empty content");
+
+                return StatusCode(500);
+            }
+            
             if (!contentType.IsImageMimeType())
             {
                 _logger.Warning($"Upstream query for {url} returned bad mimetype {contentType}");
 
                 return StatusCode(500);
             }
-            
+
             _logger.Information($"Upstream query for {url} succeeded");
 
             var entry = new CacheEntry
             {
                 Id = url.GetHashAsGuid(),
                 ContentType = contentType!,
-                LastModified = lastModified?.DateTime ?? DateTime.UtcNow,
+                LastModified = lastModified.GetValueOrDefault(DateTimeOffset.UtcNow).UtcDateTime,
                 LastAccessed = DateTime.UtcNow,
-                Size = Convert.ToUInt64(contentLength),
-                Content = await response.Content.ReadAsByteArrayAsync()
+                Size = Convert.ToUInt64(content.LongLength),
+                Content = content
             };
 
             _cacheManager.InsertEntry(entry);

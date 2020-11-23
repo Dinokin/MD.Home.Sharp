@@ -33,6 +33,7 @@ namespace MD.Home.Server
         private static CancellationTokenSource _cancellationTokenSource = new();
 
         private static bool _stopRequested;
+        private static bool _restartRequested;
 
         static Program()
         {
@@ -60,33 +61,44 @@ namespace MD.Home.Server
 
         public static async Task Main()
         {
-            await MangaDexClient.LoginToControl();
             var host = GetImageServer();
-            var hostTask = host.StartAsync(_cancellationTokenSource.Token);
+
+            await host.StartAsync();
+            await MangaDexClient.LoginToControl();
 
             while (!_stopRequested)
             {
-                if (hostTask.IsCompleted && !_stopRequested)
+                if (!_stopRequested && _restartRequested)
                 {
+                    await MangaDexClient.LogoutFromControl();
+                    await Task.Delay(TimeSpan.FromSeconds(MangaDexClient.ClientSettings.GracefulShutdownWaitSeconds));
+                    await host.StopAsync();
                     host.Dispose();
+                    
                     host = GetImageServer();
-                    hostTask = host.StartAsync(_cancellationTokenSource.Token);
+                    await host.StartAsync();
+                    await MangaDexClient.LoginToControl();
+                    _restartRequested = false;
                 }
                 
                 await Task.Delay(10);
             }
 
+            await MangaDexClient.LogoutFromControl();
+            await Task.Delay(TimeSpan.FromSeconds(MangaDexClient.ClientSettings.GracefulShutdownWaitSeconds));
             await host.StopAsync();
             host.Dispose();
-            await MangaDexClient.LogoutFromControl();
+            
             MangaDexClient.HttpClient.Dispose();
             _cancellationTokenSource.Dispose();
         }
         
-        public static void Stop()
+        public static void Restart()
         {
             _cancellationTokenSource.Cancel();
+            _cancellationTokenSource.Dispose();
             _cancellationTokenSource = new CancellationTokenSource();
+            _restartRequested = true;
         }
 
         private static void ValidateSettings()
@@ -128,7 +140,7 @@ namespace MD.Home.Server
 
                         /*
                          * var certificate = new X509Certificate2(Security.GetCertificatesBytes(MangaDexClient.RemoteSettings.TlsCertificate.Certificate));
-                         * Workaround for .NET bug https://github.com/dotnet/runtime/issues/23749
+                         * Workaround for https://github.com/dotnet/runtime/issues/23749
                          */
                         using var certificate = new X509Certificate2(Security.GetCertificateBytesFromBase64(MangaDexClient.RemoteSettings!.TlsCertificate!.Certificate!));
                         using var provider = new RSACryptoServiceProvider();
@@ -141,7 +153,7 @@ namespace MD.Home.Server
                                 {
                                     /*
                                      * listenOptions.UseHttps(certificate);
-                                     * Workaround for .NET bug https://github.com/dotnet/runtime/issues/23749
+                                     * Workaround for https://github.com/dotnet/runtime/issues/23749
                                      */
                                     listenOptions.UseHttps(new X509Certificate2(certificate.CopyWithPrivateKey(provider).Export(X509ContentType.Pkcs12)),
                                         adapterOptions => adapterOptions.SslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13);

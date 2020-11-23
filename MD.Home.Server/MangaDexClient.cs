@@ -34,6 +34,7 @@ namespace MD.Home.Server
 
         private RemoteSettings? _remoteSettings;
         private Task? _backgroundTask;
+        private bool _canPing;
 
         public MangaDexClient(ClientSettings clientSettings, HttpClient httpClient, Logger logger)
         {
@@ -64,6 +65,7 @@ namespace MD.Home.Server
             if (response.IsSuccessStatusCode)
             {
                 _remoteSettings = JsonSerializer.Deserialize<RemoteSettings>(await response.Content.ReadAsStringAsync(), new JsonSerializerOptions {PropertyNamingPolicy = new SnakeCaseNamingPolicy()});
+                _canPing = true;
                 
                 if (_remoteSettings?.LatestBuild > Constants.ClientBuild)
                     _logger.Warning($"Outdated build detected! Latest: {_remoteSettings.LatestBuild}, Current: {Constants.ClientBuild}");
@@ -83,6 +85,8 @@ namespace MD.Home.Server
 
             var message = JsonSerializer.Serialize(new Dictionary<string, object> { {"secret", ClientSettings.ClientSecret} });
             var response = await HttpClient.PostAsync($"{Constants.ServerAddress}stop", new StringContent(message, Encoding.UTF8, "application/json"));
+
+            _canPing = false;
             
             if (!response.IsSuccessStatusCode)
                 throw new AuthenticationException();
@@ -122,7 +126,7 @@ namespace MD.Home.Server
                 {
                     _logger.Information("Restarting ImageServer to refresh certificates");
                     
-                    Program.Stop();
+                    Program.Restart();
                 }
 
                 _remoteSettings = remoteSettings;
@@ -157,7 +161,8 @@ namespace MD.Home.Server
                 {
                     await Task.Delay(TimeSpan.FromSeconds(30));
 
-                    await PingControl();
+                    if (_canPing)
+                        await PingControl();
                 }
             }, TaskCreationOptions.LongRunning);
             
