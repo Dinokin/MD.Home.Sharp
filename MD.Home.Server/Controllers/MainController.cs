@@ -73,14 +73,11 @@ namespace MD.Home.Server.Controllers
                     return StatusCode(403);
                 }
 
-                var nonce = decodedToken[..^23];
-                var cipherText = decodedToken[24..^(decodedToken.Length - 1)];
-
                 Token? serializedToken;
 
                 try
                 {
-                    decodedToken = SecretBox.Open(cipherText, nonce, _mangaDexClient.RemoteSettings.DecodedToken);
+                    decodedToken = SecretBox.Open(decodedToken[24..], decodedToken[..23], _mangaDexClient.RemoteSettings.DecodedToken);
                     serializedToken = JsonSerializer.Deserialize<Token>(Encoding.UTF8.GetString(decodedToken), _mangaDexClient.JsonSerializerOptions);
                 }
                 catch

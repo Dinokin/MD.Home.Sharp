@@ -1,4 +1,6 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using MD.Home.Server.Cache;
 using MD.Home.Server.Others;
 using Microsoft.AspNetCore.Builder;
@@ -22,15 +24,19 @@ namespace MD.Home.Server
         {
             application.Use(async (context, func) =>
             {
-                using(LogContext.PushProperty("IPAddress", context.Connection.RemoteIpAddress))
-                {
-                    context.Response.Headers.Add("timing-allow-origin", "https://mangadex.org");
-                    context.Response.Headers.Add("Server", $"MD.Home.Sharp 1.0.0 {Constants.ClientBuild}");
+                var startTime = DateTime.UtcNow;
+                
+                using var ipAddressProperty = LogContext.PushProperty("IPAddress", context.Connection.RemoteIpAddress);
+                context.Response.Headers.Add("timing-allow-origin", "https://mangadex.org");
+                context.Response.Headers.Add("Server", $"MD.Home.Sharp 1.0.0 {Constants.ClientBuild}");
                     
-                    await func();
-                }
+                await func();
+
+                var timeTaken = (DateTime.UtcNow - startTime).TotalMilliseconds;
+                context.Response.Headers.Add("X-Time-Taken", timeTaken.ToString(CultureInfo.InvariantCulture));
+                using var timeTakeProperty = LogContext.PushProperty("TimeTaken", timeTaken);
             });
-            application.UseSerilogRequestLogging(options => options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} from {IPAddress} responded {StatusCode} in {Elapsed:0.0000} ms");
+            application.UseSerilogRequestLogging(options => options.MessageTemplate = "HTTP {RequestPath} from {IPAddress} responded {StatusCode} in {TimeTaken:0.0000} ms");
             application.UseRouting();
             application.UseCors(builder => builder.WithOrigins("https://mangadex.org").WithHeaders("*").WithMethods("GET"));
             application.UseEndpoints(builder => builder.MapControllers());

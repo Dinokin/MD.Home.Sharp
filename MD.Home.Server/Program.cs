@@ -61,10 +61,10 @@ namespace MD.Home.Server
 
         public static async Task Main()
         {
-            var host = GetImageServer();
-
-            await host.StartAsync();
             await MangaDexClient.LoginToControl();
+
+            var host = GetImageServer();
+            await host.StartAsync();
 
             while (!_stopRequested)
             {
@@ -74,10 +74,10 @@ namespace MD.Home.Server
                     await Task.Delay(TimeSpan.FromSeconds(MangaDexClient.ClientSettings.GracefulShutdownWaitSeconds));
                     await host.StopAsync();
                     host.Dispose();
-                    
+
+                    await MangaDexClient.LoginToControl();
                     host = GetImageServer();
                     await host.StartAsync();
-                    await MangaDexClient.LoginToControl();
                     _restartRequested = false;
                 }
                 
