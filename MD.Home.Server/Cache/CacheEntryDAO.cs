@@ -21,8 +21,7 @@ namespace MD.Home.Server.Cache
             var connectionStringBuilder = new SqliteConnectionStringBuilder
             {
                 DataSource = fileName,
-                Mode = SqliteOpenMode.ReadWriteCreate,
-                Cache = SqliteCacheMode.Shared
+                Mode = SqliteOpenMode.ReadWriteCreate
             };
 
             _connectionPool = new ConnectionPool(connectionStringBuilder.ToString(), connectionPoolSize);
@@ -102,17 +101,7 @@ namespace MD.Home.Server.Cache
 
             ExecuteQueryWithoutResult(command);
         }
-
-        public void VacuumDatabase()
-        {
-            if (_isDisposed)
-                throw new ObjectDisposedException($"This instance of {nameof(CacheEntryDao)} has been disposed.");
-            
-            using var command = new SqliteCommand(Queries.VacuumDatabase);
-            
-            ExecuteQueryWithoutResult(command);
-        }
-
+        
         public void TriggerCheckpoint()
         {
             if (_isDisposed)
@@ -121,6 +110,26 @@ namespace MD.Home.Server.Cache
             using var command = new SqliteCommand(Queries.TriggerCheckpoint);
             
             ExecuteQueryWithoutResult(command);
+        }
+        
+        private void CreateDatabase()
+        {
+            try
+            {
+                using var command1 = new SqliteCommand(Queries.SetJournalMode);
+                using var command2 = new SqliteCommand(Queries.DisableAutocheckpoint);
+                using var command3 = new SqliteCommand(Queries.SetCacheSize);
+                using var command4 = new SqliteCommand(Queries.CreateDatabase);
+
+                ExecuteQueryWithoutResult(command1);
+                ExecuteQueryWithoutResult(command2);
+                ExecuteQueryWithoutResult(command3);
+                ExecuteQueryWithoutResult(command4);
+            }
+            catch
+            {
+                // Ignore
+            }
         }
 
         public void Dispose()
@@ -134,20 +143,6 @@ namespace MD.Home.Server.Cache
             }
             
             _connectionPool.Dispose();
-        }
-
-        private void CreateDatabase()
-        {
-            try
-            {
-                using var command = new SqliteCommand(Queries.CreateDatabase);
-
-                ExecuteQueryWithoutResult(command);
-            }
-            catch
-            {
-                // Ignore
-            }
         }
 
         private double GetAverageSizeOfContents()

@@ -18,14 +18,20 @@
     <resheader name="writer">
         <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
     </resheader>
+    <data name="SetJournalMode" xml:space="preserve">
+        <value>PRAGMA journal_mode=WAL;</value>
+    </data>
+    <data name="DisableAutocheckpoint" xml:space="preserve">
+        <value>PRAGMA wal_autocheckpoint=0;</value>
+    </data>
+    <data name="SetCacheSize" xml:space="preserve">
+        <value>PRAGMA cache_size=0;</value>
+    </data>
     <data name="CreateDatabase" xml:space="preserve">
-        <value>PRAGMA journal_mode=WAL; PRAGMA wal_autocheckpoint=0; PRAGMA cache_size=50000; CREATE TABLE cache_entries (id CHARACTER(32) PRIMARY KEY, content_type VARCHAR(20) NOT NULL, last_modified DATETIME NOT NULL, last_accessed DATETIME NOT NULL, size UNSIGNED BIG INT NOT NULL, content BLOB NOT NULL);</value>>
+        <value>CREATE TABLE cache_entries (id CHARACTER(32) PRIMARY KEY, content_type VARCHAR(20) NOT NULL, last_modified DATETIME NOT NULL, last_accessed DATETIME NOT NULL, size UNSIGNED BIG INT NOT NULL, content BLOB NOT NULL);</value>>
     </data>
-    <data name="TriggerCheckpoint">
+    <data name="TriggerCheckpoint" xml:space="preserve">
         <value>PRAGMA wal_checkpoint(PASSIVE);</value>
-    </data>
-    <data name="VacuumDatabase" xml:space="preserve">
-        <value>VACUUM main;</value>
     </data>
     <data name="TotalSizeOfContents" xml:space="preserve">
         <value>SELECT SUM(size) FROM cache_entries;</value>
@@ -39,7 +45,7 @@
     <data name="InsertEntry" xml:space="preserve">
         <value>INSERT INTO cache_entries (id, content_type, last_modified, last_accessed, size, content) VALUES ($id, $content_type, $last_modified, $last_accessed, $size, $content);</value>
     </data>
-    <data name="UpdateEntryLastAccessDate">
+    <data name="UpdateEntryLastAccessDate" xml:space="preserve">
         <value>UPDATE cache_entries SET last_accessed = $last_accessed WHERE id = $id;</value>
     </data>
     <data name="DeleteLeastAccessedEntries" xml:space="preserve">

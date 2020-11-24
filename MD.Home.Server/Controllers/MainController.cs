@@ -190,7 +190,6 @@ namespace MD.Home.Server.Controllers
 
         private IActionResult ReturnFile(CacheEntry cacheEntry)
         {
-            Response.Headers.Add("X-Content-Type-Options", "nosniff");
             Response.Headers.Add("Last-Modified", cacheEntry.LastModified.ToString(CultureInfo.InvariantCulture));
 
             return File(cacheEntry.Content, cacheEntry.ContentType);

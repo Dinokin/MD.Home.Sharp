@@ -35,4 +35,8 @@
     <ItemGroup>
         <None Remove="logs\**" />
     </ItemGroup>
+    
+    <ItemGroup>
+      <Content Remove="settings.json" />
+    </ItemGroup>
 </Project>

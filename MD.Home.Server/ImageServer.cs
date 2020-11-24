@@ -2,7 +2,6 @@
 using System.Diagnostics.CodeAnalysis;
 using MD.Home.Server.Cache;
 using MD.Home.Server.Filters;
-using MD.Home.Server.Others;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,11 +14,7 @@ namespace MD.Home.Server
     {
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers(options =>
-            {
-                options.Filters.Add(typeof(HeaderInjector));
-                options.Filters.Add(typeof(ExceptionFilter));
-            });
+            services.AddControllers(options => options.Filters.Add(new HeaderInjector()));
             
             services.AddSingleton<CacheManager>();
         }
@@ -47,7 +42,6 @@ namespace MD.Home.Server
             });
             
             application.UseRouting();
-            application.UseCors(builder => builder.WithOrigins("https://mangadex.org").WithHeaders("*").WithMethods("GET"));
             application.UseEndpoints(builder => builder.MapControllers());
         }
     }

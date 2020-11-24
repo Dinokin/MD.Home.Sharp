@@ -112,14 +112,11 @@ namespace MD.Home.Server.Cache
             _cacheEntryDao.Dispose();
         }
 
-        private void TrimDatabase(bool withVacuum = false)
+        private void TrimDatabase()
         {
             if (_cacheEntryDao.TotalSizeOfContents is var totalSizeOfContents && totalSizeOfContents > _maxCacheSize)
                 ReduceCacheSize(totalSizeOfContents - _maxCacheSize);
 
-            if (withVacuum)
-                _cacheEntryDao.VacuumDatabase();
-            
             _cacheEntryDao.TriggerCheckpoint();
         }
         

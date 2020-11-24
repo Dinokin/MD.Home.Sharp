@@ -43,12 +43,7 @@ namespace MD.Home.Server
             ValidateSettings();
             
             Logger = new LoggerConfiguration()
-                .ReadFrom.Configuration(Configuration)
-                .Enrich.FromLogContext()
                 .MinimumLevel.Information()
-                .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-                .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
-                .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Warning)
                 .MinimumLevel.Override("System.Net.Http.HttpClient", LogEventLevel.Warning)
                 .WriteTo.Console()
                 .CreateLogger();
@@ -70,16 +65,12 @@ namespace MD.Home.Server
             {
                 if (!_stopRequested && _restartRequested)
                 {
-                    Logger.Information("Restarting image server");
-
-                    await MangaDexClient.LogoutFromControl();
-                    await Task.Delay(TimeSpan.FromSeconds(MangaDexClient.ClientSettings.GracefulShutdownWaitSeconds));
                     await host.StopAsync();
                     host.Dispose();
 
-                    await MangaDexClient.LoginToControl();
                     host = GetImageServer();
                     await host.StartAsync();
+                    
                     _restartRequested = false;
                 }
                 
@@ -125,7 +116,6 @@ namespace MD.Home.Server
                 .UseSerilog((_, configuration) =>
                 {
                     configuration
-                        .ReadFrom.Configuration(Configuration)
                         .Enrich.FromLogContext()
                         .MinimumLevel.Information()
                         .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)

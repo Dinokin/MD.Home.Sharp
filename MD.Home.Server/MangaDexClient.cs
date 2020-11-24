@@ -34,7 +34,7 @@ namespace MD.Home.Server
 
         private RemoteSettings? _remoteSettings;
         private Task? _backgroundTask;
-        private bool _canPing;
+        private bool _isLoggedIn;
 
         public MangaDexClient(ClientSettings clientSettings, HttpClient httpClient, ILogger logger)
         {
@@ -54,7 +54,7 @@ namespace MD.Home.Server
 
         public async Task LoginToControl()
         {
-            if (_remoteSettings != null)
+            if (_remoteSettings != null && _isLoggedIn)
                 throw new InvalidOperationException();
             
             _logger.Information("Connecting to the control server");
@@ -65,7 +65,7 @@ namespace MD.Home.Server
             if (response.IsSuccessStatusCode)
             {
                 _remoteSettings = JsonSerializer.Deserialize<RemoteSettings>(await response.Content.ReadAsStringAsync(), new JsonSerializerOptions {PropertyNamingPolicy = new SnakeCaseNamingPolicy()});
-                _canPing = true;
+                _isLoggedIn = true;
                 
                 if (_remoteSettings?.LatestBuild > Constants.ClientBuild)
                     _logger.Warning($"Outdated build detected! Latest: {_remoteSettings.LatestBuild}, Current: {Constants.ClientBuild}");
@@ -78,7 +78,7 @@ namespace MD.Home.Server
 
         public async Task LogoutFromControl()
         {
-            if (_remoteSettings == null)
+            if (_remoteSettings == null || !_isLoggedIn)
                 throw new InvalidOperationException("This client has not logged in to the control.");
             
             _logger.Information("Disconnecting from the control server");
@@ -86,7 +86,7 @@ namespace MD.Home.Server
             var message = JsonSerializer.Serialize(new Dictionary<string, object> { {"secret", ClientSettings.ClientSecret} });
             var response = await HttpClient.PostAsync($"{Constants.ServerAddress}stop", new StringContent(message, Encoding.UTF8, "application/json"));
 
-            _canPing = false;
+            _isLoggedIn = false;
             
             if (!response.IsSuccessStatusCode)
                 throw new AuthenticationException();
@@ -122,19 +122,20 @@ namespace MD.Home.Server
                 if (remoteSettings?.LatestBuild > Constants.ClientBuild)
                     _logger.Warning($"Outdated build detected! Latest: {remoteSettings.LatestBuild}, Current: {Constants.ClientBuild}");
 
-                if (RemoteSettings.TlsCertificate?.Certificate != remoteSettings?.TlsCertificate?.Certificate)
+                if (!ValidateSettings(remoteSettings))
                 {
                     _logger.Information("Restarting ImageServer to refresh certificates");
+                    _remoteSettings = remoteSettings;
                     
                     Program.Restart();
                 }
-
-                _remoteSettings = remoteSettings;
+                else
+                    _remoteSettings = remoteSettings;
             }
             else
                 _logger.Information("Server ping failed - ignoring");
         }
-        
+
         private Dictionary<string, object> GetPingParameters()
         {
             var message = new Dictionary<string, object>
@@ -145,9 +146,9 @@ namespace MD.Home.Server
                 {"network_speed", 0},
                 {"build_version", Constants.ClientBuild}
             };
-            
+
             if (_remoteSettings?.TlsCertificate != null)
-                message.Add("tls_created_at", _remoteSettings.TlsCertificate.CreatedAt);
+                message.Add("tls_created_at", _remoteSettings.TlsCertificate.CreatedAt.ToString("O"));
 
             return message;
         }
@@ -161,12 +162,16 @@ namespace MD.Home.Server
                 {
                     await Task.Delay(TimeSpan.FromSeconds(30));
 
-                    if (_canPing)
+                    if (_isLoggedIn)
                         await PingControl();
                 }
             }, TaskCreationOptions.LongRunning);
             
             _backgroundTask.Start();
         }
+
+        private bool ValidateSettings(RemoteSettings? remoteSettings) =>
+            RemoteSettings.TlsCertificate?.Certificate == remoteSettings?.TlsCertificate?.Certificate &&
+            RemoteSettings.TlsCertificate?.Certificate == remoteSettings?.TlsCertificate?.Certificate;
     }
 }

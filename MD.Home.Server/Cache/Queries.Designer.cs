@@ -88,6 +88,15 @@ namespace MD.Home.Server.Cache {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to PRAGMA wal_autocheckpoint=0;.
+        /// </summary>
+        internal static string DisableAutocheckpoint {
+            get {
+                return ResourceManager.GetString("DisableAutocheckpoint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to SELECT id, content_type, last_modified, last_accessed, size, content FROM cache_entries WHERE id = $id;.
         /// </summary>
         internal static string GetEntryById {
@@ -102,6 +111,24 @@ namespace MD.Home.Server.Cache {
         internal static string InsertEntry {
             get {
                 return ResourceManager.GetString("InsertEntry", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to PRAGMA cache_size=0;.
+        /// </summary>
+        internal static string SetCacheSize {
+            get {
+                return ResourceManager.GetString("SetCacheSize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to PRAGMA journal_mode=WAL;.
+        /// </summary>
+        internal static string SetJournalMode {
+            get {
+                return ResourceManager.GetString("SetJournalMode", resourceCulture);
             }
         }
         
@@ -129,15 +156,6 @@ namespace MD.Home.Server.Cache {
         internal static string UpdateEntryLastAccessDate {
             get {
                 return ResourceManager.GetString("UpdateEntryLastAccessDate", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to VACUUM main;.
-        /// </summary>
-        internal static string VacuumDatabase {
-            get {
-                return ResourceManager.GetString("VacuumDatabase", resourceCulture);
             }
         }
     }
