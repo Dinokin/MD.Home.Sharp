@@ -29,7 +29,7 @@ namespace MD.Home.Server.Configuration
         public ushort LatestBuild { get; }
         
         [JsonPropertyName("tls")]
-        public TlsCertificate? TlsCertificate { get; }
+        public TlsCertificate? TlsCertificate { get; set; }
 
         public RemoteSettings(string url, string imageServer, byte[] tokenKey, bool isCompromised, bool isPaused, bool forceTokens, ushort latestBuild, TlsCertificate? tlsCertificate)
         {

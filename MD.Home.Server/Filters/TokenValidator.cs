@@ -2,6 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.Json;
+using MD.Home.Server.Extensions;
 using MD.Home.Server.Others;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -27,6 +28,8 @@ namespace MD.Home.Server.Filters
         [SuppressMessage("ReSharper", "RedundantJumpStatement")]
         public void OnActionExecuting(ActionExecutingContext context)
         {
+            var path = context.HttpContext.Request.Path.Value.GetFilteredPath();
+
             if (!context.ActionArguments.TryGetValue("token", out var token))
                 return;
 
@@ -37,7 +40,7 @@ namespace MD.Home.Server.Filters
                 case 0 when !Program.MangaDexClient.RemoteSettings.ForceTokens:
                     return;
                 case < 24:
-                    _logger.Information($"Request for {context.HttpContext.Request.Path} rejected for invalid token");
+                    _logger.Information($"Request for {path} rejected for invalid token");
 
                     context.Result = new StatusCodeResult(403);
                 
@@ -53,7 +56,7 @@ namespace MD.Home.Server.Filters
             }
             catch
             {
-                _logger.Information($"Request for {context.HttpContext.Request.Path} rejected for invalid token");
+                _logger.Information($"Request for {path} rejected for invalid token");
 
                 context.Result = new StatusCodeResult(403);
                 
@@ -62,16 +65,16 @@ namespace MD.Home.Server.Filters
 
             if (serializedToken == null)
             {
-                _logger.Information($"Request for {context.HttpContext.Request.Path} rejected for invalid token");
+                _logger.Information($"Request for {path} rejected for invalid token");
 
                 context.Result = new StatusCodeResult(403);
                 
                 return;
             }
 
-            if (DateTime.UtcNow > serializedToken.ExpirationDate.ToUniversalTime())
+            if (DateTimeOffset.UtcNow > serializedToken.ExpirationDate)
             {
-                _logger.Information($"Request for {context.HttpContext.Request.Path} rejected for expired token");
+                _logger.Information($"Request for {path} rejected for expired token");
 
                 context.Result = new StatusCodeResult(410);
                 
@@ -80,7 +83,7 @@ namespace MD.Home.Server.Filters
             
             if (context.ActionArguments.TryGetValue("chapterId", out var chapterId) && serializedToken.Hash != ((Guid) chapterId).ToString("N"))
             {
-                _logger.Information($"Request for {context.HttpContext.Request.Path} rejected for inapplicable token");
+                _logger.Information($"Request for {path} rejected for inapplicable token");
 
                 context.Result = new StatusCodeResult(410);
                 

@@ -34,17 +34,22 @@ namespace MD.Home.Server
         private bool _isLoggedIn;
         private RemoteSettings? _remoteSettings;
 
+        private bool _isDisposed;
+
         public MangaDexClient(ILogger logger, ClientSettings clientSettings, JsonSerializerOptions serializerOptions)
         {
             _logger = logger;
             _clientSettings = clientSettings;
             _serializerOptions = serializerOptions;
 
-            _pingTimer = new Timer(PingControl, null, TimeSpan.FromSeconds(45), TimeSpan.FromSeconds(45));
+            _pingTimer = new Timer(PingControl, null, TimeSpan.FromSeconds(20), TimeSpan.FromSeconds(20));
         }
 
         public async Task LoginToControl()
         {
+            if (_isDisposed)
+                throw new ObjectDisposedException($"This instance of {nameof(MangaDexClient)} has been disposed.");
+            
             _logger.Information("Connecting to the control server");
 
             var message = JsonSerializer.Serialize(GetPingParameters(), _serializerOptions);
@@ -64,13 +69,16 @@ namespace MD.Home.Server
 
         public async Task LogoutFromControl()
         {
+            if (_isDisposed)
+                throw new ObjectDisposedException($"This instance of {nameof(MangaDexClient)} has been disposed.");
+            
             _logger.Information("Disconnecting from the control server");
 
             var message = JsonSerializer.Serialize(new Dictionary<string, object> { {"secret", _clientSettings.ClientSecret} }, _serializerOptions);
             var response = await Program.HttpClient.PostAsync($"{Constants.ServerAddress}stop", new StringContent(message, Encoding.UTF8, "application/json"));
 
             _isLoggedIn = false;
-            
+
             if (!response.IsSuccessStatusCode)
                 throw new AuthenticationException();
         }
@@ -79,10 +87,11 @@ namespace MD.Home.Server
         {
             lock (this)
             {
-                if (!_isLoggedIn)
+                if (_isDisposed)
                     throw new ObjectDisposedException($"This instance of {nameof(MangaDexClient)} has been disposed.");
 
                 _isLoggedIn = false;
+                _isDisposed = true;
             }
 
             GC.SuppressFinalize(this);
@@ -91,7 +100,7 @@ namespace MD.Home.Server
 
         private async void PingControl(object? state)
         {
-            if (_remoteSettings == null || !_isLoggedIn)
+            if (_remoteSettings == null || !_isLoggedIn || _isDisposed)
                 return;
 
             _logger.Information("Pinging the control server");
@@ -119,15 +128,18 @@ namespace MD.Home.Server
                 if (remoteSettings?.LatestBuild > Constants.ClientBuild)
                     _logger.Warning($"Outdated build detected! Latest: {remoteSettings.LatestBuild}, Current: {Constants.ClientBuild}");
 
-                if (!ValidateSettings(remoteSettings))
+                if (remoteSettings?.TlsCertificate != null)
                 {
                     _logger.Information("Restarting ImageServer to refresh certificates");
                     _remoteSettings = remoteSettings;
                     
                     Program.Restart();
                 }
-                else
+                else if (remoteSettings != null)
+                {
+                    remoteSettings.TlsCertificate = _remoteSettings.TlsCertificate;
                     _remoteSettings = remoteSettings;
+                }
             }
             else
                 _logger.Information("Server ping failed - ignoring");
@@ -145,13 +157,9 @@ namespace MD.Home.Server
             };
 
             if (_remoteSettings?.TlsCertificate != null)
-                message.Add("tls_created_at", _remoteSettings.TlsCertificate.CreatedAt.ToString("O"));
+                message.Add("tls_created_at", _remoteSettings.TlsCertificate.CreatedAt);
 
             return message;
         }
-        
-        private bool ValidateSettings(RemoteSettings? remoteSettings) =>
-            RemoteSettings.TlsCertificate?.Certificate == remoteSettings?.TlsCertificate?.Certificate &&
-            RemoteSettings.TlsCertificate?.Certificate == remoteSettings?.TlsCertificate?.Certificate;
     }
 }

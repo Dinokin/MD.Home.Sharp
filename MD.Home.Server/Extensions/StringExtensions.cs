@@ -10,6 +10,14 @@ namespace MD.Home.Server.Extensions
         public static bool IsValidSecret(this string source) => !string.IsNullOrWhiteSpace(source) && Regex.IsMatch(source, "^[a-zA-Z0-9]{52}$");
 
         public static bool IsImageMimeType(this string? source) => !string.IsNullOrWhiteSpace(source) && Regex.IsMatch(source, "^image/");
+
+        public static string? GetFilteredPath(this string? source)
+        {
+            if (string.IsNullOrWhiteSpace(source))
+                return source;
+
+            return source.Contains("/data") ? source.Substring(source.IndexOf("/data", StringComparison.InvariantCulture)) : source;
+        }
         
         public static Guid GetHashAsGuid(this string source)
         {

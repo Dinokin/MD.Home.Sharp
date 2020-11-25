@@ -16,9 +16,9 @@ namespace MD.Home.Server.Others
         public string Hash { get; }
         
         [JsonPropertyName("expires")]
-        public DateTime ExpirationDate { get; }
+        public DateTimeOffset ExpirationDate { get; }
 
-        public Token(string clientId, string ip, string hash, DateTime expirationDate)
+        public Token(string clientId, string ip, string hash, DateTimeOffset expirationDate)
         {
             ClientId = clientId;
             Ip = ip;
