@@ -12,7 +12,7 @@ namespace MD.Home.Server.Filters
         public void OnResultExecuting(ResultExecutingContext context)
         {
             context.HttpContext.Items.TryGetValue("StartTime", out var startTime);
-            var timeTaken = ((DateTime) startTime! - DateTime.UtcNow).TotalMilliseconds;
+            var timeTaken = (DateTime.UtcNow - (DateTime) startTime!).TotalMilliseconds;
             context.HttpContext.Items.Add("TimeTaken", timeTaken);
             
             context.HttpContext.Response.Headers.Add("Access-Control-Allow-Origin", "https://mangadex.org");
