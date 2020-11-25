@@ -1,5 +1,4 @@
-﻿using System;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using MD.Home.Server.Cache;
 using MD.Home.Server.Filters;
 using Microsoft.AspNetCore.Builder;
@@ -14,31 +13,23 @@ namespace MD.Home.Server
     {
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers(options => options.Filters.Add(new HeaderInjector()));
-            
+            services.AddControllers(options =>
+            {
+                options.Filters.Add<ReferrerValidator>();
+                options.Filters.Add<TokenValidator>();
+                options.Filters.Add<HeaderInjector>();
+            });
+
             services.AddSingleton<CacheManager>();
         }
 
         public void Configure(IApplicationBuilder application, IWebHostEnvironment environment)
         {
-            application.Use(async (context, func) =>
-            {
-                context.Items.Add("StartTime", DateTime.UtcNow);
-
-                await func();
-            });
-
             application.UseSerilogRequestLogging(options =>
             {
-                options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} from {IPAddress} responded {StatusCode} in {Elapsed:0.0000} ms with TTFB in {TTFB:0.0000} ms";
+                options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} from {IPAddress} responded {StatusCode} in {Elapsed:0.0000} ms";
 
-                options.EnrichDiagnosticContext = (context, httpContext) =>
-                {
-                    var ttfbAvailable = httpContext.Items.TryGetValue("TTFB", out var value);
-                    
-                    context.Set("IPAddress", httpContext.Connection.RemoteIpAddress);
-                    context.Set("TTFB", ttfbAvailable ? (double) value! : -1); 
-                };
+                options.EnrichDiagnosticContext = (context, httpContext) => context.Set("IPAddress", httpContext.Connection.RemoteIpAddress);
             });
             
             application.UseRouting();

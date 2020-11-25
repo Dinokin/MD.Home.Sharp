@@ -1,9 +1,9 @@
 {
   "ClientHostname": "0.0.0.0",
-  "ClientPort": 5007,
-  "ClientExternalPort": 5007,
-  "ClientSecret": "",
-  "MaxCacheSizeInMebibytes": 10000,
-  "MaxEntriesInMemory": 500,
+  "ClientPort": 443,
+  "ClientExternalPort": 443,
+  "ClientSecret": "please-insert-your-secret-here-oniichan",
+  "MaxCacheSizeInMebibytes": 100000,
+  "MaxPagesInMemory": 1000,
   "GracefulShutdownWaitSeconds": 60
 }

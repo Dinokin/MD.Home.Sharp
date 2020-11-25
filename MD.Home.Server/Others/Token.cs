@@ -10,12 +10,15 @@ namespace MD.Home.Server.Others
     public sealed class Token
     {
         public string ClientId { get; }
+        
         public string Ip { get; }
+        
         public string Hash { get; }
+        
         [JsonPropertyName("expires")]
-        public DateTimeOffset ExpirationDate { get; }
+        public DateTime ExpirationDate { get; }
 
-        public Token(string clientId, string ip, string hash, DateTimeOffset expirationDate)
+        public Token(string clientId, string ip, string hash, DateTime expirationDate)
         {
             ClientId = clientId;
             Ip = ip;

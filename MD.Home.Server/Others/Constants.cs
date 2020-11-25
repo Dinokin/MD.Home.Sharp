@@ -7,8 +7,6 @@ namespace MD.Home.Server.Others
         public const string ServerAddress = "https://api.mangadex.network/";
         public const string SettingsFile = "settings.json";
         public const string CacheFile = "cache.db";
-        public const string ClientLogFile = "logs/client.log";
-        public const string ServerLogFile = "logs/server.log";
         public const ushort ClientBuild = 19;
 
         public static readonly ImmutableArray<ushort> ReservedPorts = ImmutableArray.Create<ushort>(

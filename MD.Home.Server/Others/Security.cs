@@ -5,21 +5,29 @@ namespace MD.Home.Server.Others
 {
     public static class Security
     {
+        public enum InputType
+        {
+            Certificate,
+            PrivateKey
+        }
+        
         private const string CertificateHeader = "-----BEGIN CERTIFICATE-----";
         private const string CertificateFooter = "-----END CERTIFICATE-----";
         private const string PrivateKeyHeader = "-----BEGIN RSA PRIVATE KEY-----";
         private const string PrivateKeyFooter = "-----END RSA PRIVATE KEY-----";
 
-        public static byte[] GetCertificateBytesFromBase64(string certificate)
+        public static byte[] GetCertificateBytesFromBase64(string input, InputType type)
         {
-            var filteredCert = certificate.Replace(CertificateHeader, string.Empty);
-            filteredCert = filteredCert.Replace(CertificateFooter, string.Empty);
-            filteredCert = filteredCert.Replace(PrivateKeyHeader, string.Empty);
-            filteredCert = filteredCert.Replace(PrivateKeyFooter, string.Empty);
+            string filteredInput = type switch
+            {
+                InputType.Certificate => input.Replace(CertificateHeader, string.Empty).Replace(CertificateFooter, string.Empty),
+                InputType.PrivateKey => input.Replace(PrivateKeyHeader, string.Empty).Replace(PrivateKeyFooter, string.Empty),
+                _ => throw new InvalidOperationException($"Unknown input type: {type}")
+            };
 
-            filteredCert = Regex.Replace(filteredCert, "[^a-zA-Z0-9+/]", string.Empty);
+            filteredInput = Regex.Replace(filteredInput, "[^a-zA-Z0-9+/]", string.Empty);
 
-            return Convert.FromBase64String(filteredCert);
+            return Convert.FromBase64String(filteredInput);
         }
     }
 }

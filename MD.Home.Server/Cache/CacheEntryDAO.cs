@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Data;
 using MD.Home.Server.Extensions;
-using MD.Home.Server.Serialization;
 using Microsoft.Data.Sqlite;
 
 namespace MD.Home.Server.Cache
@@ -12,7 +11,6 @@ namespace MD.Home.Server.Cache
         public ulong TotalSizeOfContents => GetTotalSizeOfContents();
 
         private readonly ConnectionPool _connectionPool;
-        private readonly SnakeCaseNamingPolicy _snakeConv = new();
 
         private bool _isDisposed;
 
@@ -21,7 +19,8 @@ namespace MD.Home.Server.Cache
             var connectionStringBuilder = new SqliteConnectionStringBuilder
             {
                 DataSource = fileName,
-                Mode = SqliteOpenMode.ReadWriteCreate
+                Mode = SqliteOpenMode.ReadWriteCreate,
+                Cache = SqliteCacheMode.Shared
             };
 
             _connectionPool = new ConnectionPool(connectionStringBuilder.ToString(), connectionPoolSize);
@@ -34,7 +33,7 @@ namespace MD.Home.Server.Cache
                 throw new ObjectDisposedException($"This instance of {nameof(CacheEntryDao)} has been disposed.");
             
             using var command = new SqliteCommand(Queries.GetEntryById);
-            command.Parameters.Add(new SqliteParameter($"${_snakeConv.ConvertName(nameof(CacheEntry.Id))}", entryId.ToString("N")));
+            command.Parameters.Add(new SqliteParameter("$id", entryId.ToString("N")));
 
             using var reader = ExecuteQueryWithResult(command, CommandBehavior.SingleResult);
 
@@ -43,12 +42,12 @@ namespace MD.Home.Server.Cache
             if (reader.Read())
                 cacheEntry = new CacheEntry
                 {
-                    Id = reader.GetGuid(_snakeConv.ConvertName(nameof(CacheEntry.Id))),
-                    ContentType = reader.GetString(_snakeConv.ConvertName(nameof(CacheEntry.ContentType))),
-                    LastAccessed = reader.GetDateTime(_snakeConv.ConvertName(nameof(CacheEntry.LastAccessed))),
-                    LastModified = reader.GetDateTime(_snakeConv.ConvertName(nameof(CacheEntry.LastModified))),
-                    Size = Convert.ToUInt64(reader.GetInt64(_snakeConv.ConvertName(nameof(CacheEntry.Size)))),
-                    Content = reader.GetStream(_snakeConv.ConvertName(nameof(CacheEntry.Content))).GetBytes()
+                    Id = reader.GetGuid("id"),
+                    ContentType = reader.GetString("content_type"),
+                    LastAccessed = reader.GetDateTime("last_accessed"),
+                    LastModified = reader.GetDateTime("last_modified"),
+                    Size = Convert.ToUInt64(reader.GetInt64("size")),
+                    Content = reader.GetStream("content").GetBytes()
                 };
             
             return cacheEntry;
@@ -63,12 +62,12 @@ namespace MD.Home.Server.Cache
             
             command.Parameters.AddRange(new []
             {
-                new SqliteParameter($"${_snakeConv.ConvertName(nameof(CacheEntry.Id))}", cacheEntry.Id.ToString("N")),
-                new SqliteParameter($"${_snakeConv.ConvertName(nameof(CacheEntry.ContentType))}", cacheEntry.ContentType),
-                new SqliteParameter($"${_snakeConv.ConvertName(nameof(CacheEntry.LastModified))}", cacheEntry.LastModified),
-                new SqliteParameter($"${_snakeConv.ConvertName(nameof(CacheEntry.LastAccessed))}", cacheEntry.LastAccessed),
-                new SqliteParameter($"${_snakeConv.ConvertName(nameof(CacheEntry.Size))}", cacheEntry.Size),
-                new SqliteParameter($"${_snakeConv.ConvertName(nameof(CacheEntry.Content))}", cacheEntry.Content)
+                new SqliteParameter("$id", cacheEntry.Id.ToString("N")),
+                new SqliteParameter("$content_type", cacheEntry.ContentType),
+                new SqliteParameter("$last_accessed", cacheEntry.LastAccessed),
+                new SqliteParameter("$last_modified", cacheEntry.LastModified),
+                new SqliteParameter("$size", cacheEntry.Size),
+                new SqliteParameter("$content", cacheEntry.Content)
             });
             
             ExecuteQueryWithoutResult(command);
@@ -83,8 +82,8 @@ namespace MD.Home.Server.Cache
             
             command.Parameters.AddRange(new []
             {
-                new SqliteParameter($"${_snakeConv.ConvertName(nameof(CacheEntry.Id))}", id.ToString("N")),
-                new SqliteParameter($"${_snakeConv.ConvertName(nameof(CacheEntry.LastAccessed))}", date),
+                new SqliteParameter("$id", id.ToString("N")),
+                new SqliteParameter("$last_accessed", date),
             });
             
             ExecuteQueryWithoutResult(command);
@@ -97,7 +96,7 @@ namespace MD.Home.Server.Cache
 
             using var command = new SqliteCommand(Queries.DeleteLeastAccessedEntries);
 
-            command.Parameters.Add(new SqliteParameter($"${_snakeConv.ConvertName(nameof(amount))}", amount));
+            command.Parameters.Add(new SqliteParameter("$amount", amount));
 
             ExecuteQueryWithoutResult(command);
         }
@@ -143,6 +142,7 @@ namespace MD.Home.Server.Cache
             }
             
             _connectionPool.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         private double GetAverageSizeOfContents()

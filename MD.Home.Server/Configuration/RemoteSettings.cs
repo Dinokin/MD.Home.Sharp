@@ -2,7 +2,7 @@
 using System.Text;
 using System.Text.Json.Serialization;
 using MD.Home.Server.Configuration.Types;
-using MD.Home.Server.Extensions;
+using MD.Home.Server.Serialization;
 
 namespace MD.Home.Server.Configuration
 {
@@ -12,21 +12,26 @@ namespace MD.Home.Server.Configuration
     public sealed class RemoteSettings
     {
         public string Url { get; }
+        
         public string ImageServer { get; }
-        public string TokenKey { get; }
+        
+        [JsonConverter(typeof(Base64BytesDecoder))]
+        public byte[] TokenKey { get; }
+        
         [JsonPropertyName("compromised")]
         public bool IsCompromised { get; }
+        
         [JsonPropertyName("paused")]
         public bool IsPaused { get; }
+        
         public bool ForceTokens { get; }
+        
         public ushort LatestBuild { get; }
+        
         [JsonPropertyName("tls")]
         public TlsCertificate? TlsCertificate { get; }
-        
-        [JsonIgnore]
-        public byte[] DecodedToken { get; }
-        
-        public RemoteSettings(string url, string imageServer, string tokenKey, bool isCompromised, bool isPaused, bool forceTokens, ushort latestBuild, TlsCertificate? tlsCertificate)
+
+        public RemoteSettings(string url, string imageServer, byte[] tokenKey, bool isCompromised, bool isPaused, bool forceTokens, ushort latestBuild, TlsCertificate? tlsCertificate)
         {
             Url = url;
             ImageServer = imageServer;
@@ -36,8 +41,6 @@ namespace MD.Home.Server.Configuration
             ForceTokens = forceTokens;
             LatestBuild = latestBuild;
             TlsCertificate = tlsCertificate;
-
-            DecodedToken = tokenKey.DecodeFromBase64Url();
         }
 
         public override string ToString()

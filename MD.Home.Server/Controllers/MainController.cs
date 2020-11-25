@@ -1,16 +1,12 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Linq;
 using System.Net.Http;
-using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 using MD.Home.Server.Cache;
 using MD.Home.Server.Extensions;
-using MD.Home.Server.Others;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
-using Sodium;
 
 namespace MD.Home.Server.Controllers
 {
@@ -19,92 +15,31 @@ namespace MD.Home.Server.Controllers
     public class MainController : Controller
     {
         private readonly CacheManager _cacheManager;
-        private readonly MangaDexClient _mangaDexClient;
         private readonly ILogger _logger;
 
-        public MainController(CacheManager cacheManager, MangaDexClient mangaDexClient, ILogger logger)
+        public MainController(CacheManager cacheManager, ILogger logger)
         {
             _cacheManager = cacheManager;
-            _mangaDexClient = mangaDexClient;
             _logger = logger;
         }
 
         [HttpGet("data/{chapterId:guid}/{name}")]
-        public async Task<IActionResult> FetchNormalImage(Guid chapterId, string name) => await FetchImage(chapterId, name, false, null);
+        public async Task<IActionResult> FetchNormalImage(Guid chapterId, string name) => await FetchImage(false, chapterId, name);
 
         [HttpGet("data-saver/{chapterId:guid}/{name}")]
-        public async Task<IActionResult> FetchDataSaverImage(Guid chapterId, string name) => await FetchImage(chapterId, name, true, null);
+        public async Task<IActionResult> FetchDataSaverImage(Guid chapterId, string name) => await FetchImage(true, chapterId, name);
         
         [HttpGet("{token}/data/{chapterId:guid}/{name}")]
-        public async Task<IActionResult> FetchTokenizedNormalImage(string token, Guid chapterId, string name) => await FetchImage(chapterId, name, false, token);
+        [SuppressMessage("ReSharper", "UnusedParameter.Global")]
+        public async Task<IActionResult> FetchTokenizedNormalImage(string token, Guid chapterId, string name) => await FetchImage(false, chapterId, name);
 
         [HttpGet("{token}/data-saver/{chapterId:guid}/{name}")]
-        public async Task<IActionResult> FetchTokenizedDataSaverImage(string token, Guid chapterId, string name) => await FetchImage(chapterId, name, true, token); 
+        [SuppressMessage("ReSharper", "UnusedParameter.Global")]
+        public async Task<IActionResult> FetchTokenizedDataSaverImage(string token, Guid chapterId, string name) => await FetchImage(true, chapterId, name); 
         
-        private async Task<IActionResult> FetchImage(Guid chapterId, string name, bool dataSaver, string? token)
+        private async Task<IActionResult> FetchImage(bool dataSaver, Guid chapterId, string name)
         {
             var url = $"/{(dataSaver ? "data-saver" : "data")}/{chapterId:N}/{name}";
-            
-            if (!IsValidReferrer())
-            {
-                _logger.Information($"Request for {url} rejected due to non-allowed referrer ${string.Join(',', Request.Headers["Referer"])}");
-
-                return StatusCode(403);
-            }
-
-            if (token != null || _mangaDexClient.RemoteSettings.ForceTokens)
-            {
-                if (token == null)
-                {
-                    _logger.Information($"Request for {url} rejected for invalid token");
-
-                    return StatusCode(403);
-                }
-                
-                var decodedToken = token.DecodeFromBase64Url();
-
-                if (decodedToken.Length < 24)
-                {
-                    _logger.Information($"Request for {url} rejected for invalid token");
-
-                    return StatusCode(403);
-                }
-
-                Token? serializedToken;
-
-                try
-                {
-                    decodedToken = SecretBox.Open(decodedToken[24..], decodedToken[..24], _mangaDexClient.RemoteSettings.DecodedToken);
-                    serializedToken = JsonSerializer.Deserialize<Token>(Encoding.UTF8.GetString(decodedToken), _mangaDexClient.JsonSerializerOptions);
-                }
-                catch
-                {
-                    _logger.Information($"Request for {url} rejected for invalid token");
-                    
-                    return StatusCode(403);
-                }
-
-                if (serializedToken == null)
-                {
-                    _logger.Information($"Request for {url} rejected for invalid token");
-
-                    return StatusCode(403);
-                }
-
-                if (DateTime.UtcNow > serializedToken.ExpirationDate.UtcDateTime)
-                {
-                    _logger.Information($"Request for {url} rejected for expired token");
-
-                    return StatusCode(410);
-                }
-
-                if (serializedToken.Hash != chapterId.ToString("N"))
-                {
-                    _logger.Information($"Request for {url} rejected for inapplicable token");
-
-                    return StatusCode(403);
-                }
-            }
             
             var entry = _cacheManager.GetEntry(url.GetHashAsGuid());
 
@@ -119,7 +54,7 @@ namespace MD.Home.Server.Controllers
 
             try
             {
-                response = await _mangaDexClient.HttpClient.GetAsync(_mangaDexClient.RemoteSettings.ImageServer + url);
+                response = await Program.HttpClient.GetAsync(Program.MangaDexClient.RemoteSettings.ImageServer + url);
             }
             catch
             {
@@ -193,13 +128,6 @@ namespace MD.Home.Server.Controllers
             Response.Headers.Add("Last-Modified", cacheEntry.LastModified.ToString(CultureInfo.InvariantCulture));
 
             return File(cacheEntry.Content, cacheEntry.ContentType);
-        }
-
-        private bool IsValidReferrer()
-        {
-            string[] allowedReferrers = {"https://mangadex.org", "https://mangadex.network", string.Empty};
-
-            return !Request.Headers.TryGetValue("Referer", out var referer) || referer.Any(str => allowedReferrers.Any(str.Contains));
         }
     }
 }

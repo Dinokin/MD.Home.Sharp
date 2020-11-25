@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -6,12 +7,13 @@ using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading;
+using System.Text.Json;
 using System.Threading.Tasks;
 using MD.Home.Server.Configuration;
 using MD.Home.Server.Exceptions;
 using MD.Home.Server.Extensions;
 using MD.Home.Server.Others;
+using MD.Home.Server.Serialization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
@@ -25,18 +27,26 @@ namespace MD.Home.Server
 {
     public static class Program
     {
-        private static readonly ClientSettings ClientSettings = new();
-        private static readonly MangaDexClient MangaDexClient;
+        public static readonly MangaDexClient MangaDexClient;
+        public static readonly HttpClient HttpClient;
+        
         private static readonly IConfiguration? Configuration;
         private static readonly ILogger Logger;
 
-        private static CancellationTokenSource _cancellationTokenSource = new();
+        private static readonly ClientSettings ClientSettings;
+        private static readonly JsonSerializerOptions SerializerOptions;
 
         private static bool _stopRequested;
         private static bool _restartRequested;
 
         static Program()
         {
+            var namingPolicy = new SnakeCaseNamingPolicy();
+            
+            HttpClient = new HttpClient();
+            ClientSettings = new ClientSettings();
+            SerializerOptions = new JsonSerializerOptions {PropertyNamingPolicy = namingPolicy, DictionaryKeyPolicy = namingPolicy};
+            
             Configuration = new ConfigurationBuilder().AddJsonFile(Constants.SettingsFile, false).Build();
             Configuration.Bind(ClientSettings);
             
@@ -47,10 +57,10 @@ namespace MD.Home.Server
                 .MinimumLevel.Override("System.Net.Http.HttpClient", LogEventLevel.Warning)
                 .WriteTo.Console()
                 .CreateLogger();
-            
-            MangaDexClient = new MangaDexClient(ClientSettings, new HttpClient(), Logger);
 
             Console.CancelKeyPress += (_, _) => _stopRequested = true;
+
+            MangaDexClient = new MangaDexClient(Logger, ClientSettings, SerializerOptions);
         }
 
         public static async Task Main()
@@ -58,6 +68,7 @@ namespace MD.Home.Server
             await MangaDexClient.LoginToControl();
             
             Logger.Information("Starting image server");
+            
             var host = GetImageServer();
             await host.StartAsync();
 
@@ -76,24 +87,20 @@ namespace MD.Home.Server
                 
                 await Task.Delay(10);
             }
-            Logger.Information("Stopping image server");
 
             await MangaDexClient.LogoutFromControl();
-            await Task.Delay(TimeSpan.FromSeconds(MangaDexClient.ClientSettings.GracefulShutdownWaitSeconds));
-            await host.StopAsync();
-            host.Dispose();
+
+            Logger.Information("Gracefully stopping image server");
             
-            MangaDexClient.HttpClient.Dispose();
-            _cancellationTokenSource.Dispose();
+            await Task.Delay(TimeSpan.FromSeconds(ClientSettings.GracefulShutdownWaitSeconds));
+            await host.StopAsync();
+            
+            host.Dispose();
+            MangaDexClient.Dispose();
+            HttpClient.Dispose();
         }
         
-        public static void Restart()
-        {
-            _cancellationTokenSource.Cancel();
-            _cancellationTokenSource.Dispose();
-            _cancellationTokenSource = new CancellationTokenSource();
-            _restartRequested = true;
-        }
+        public static void Restart() => _restartRequested = true;
 
         private static void ValidateSettings()
         {
@@ -110,7 +117,8 @@ namespace MD.Home.Server
                 throw new ClientSettingsException("Invalid max cache size, must be >= 1024 MiB (1GiB)");
         }
 
-        private static IHost GetImageServer() => 
+        [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
+        private static IHost GetImageServer() =>
             Host.CreateDefaultBuilder()
                 .ConfigureHostConfiguration(builder => builder.AddConfiguration(Configuration, false))
                 .UseSerilog((_, configuration) =>
@@ -129,15 +137,11 @@ namespace MD.Home.Server
                     builder.ConfigureKestrel(options =>
                     {
                         options.AddServerHeader = false;
-
-                        /*
-                         * var certificate = new X509Certificate2(Security.GetCertificatesBytes(MangaDexClient.RemoteSettings.TlsCertificate.Certificate));
-                         * Workaround for https://github.com/dotnet/runtime/issues/23749
-                         */
-                        using var certificate = new X509Certificate2(Security.GetCertificateBytesFromBase64(MangaDexClient.RemoteSettings!.TlsCertificate!.Certificate!));
+                        
+                        using var certificate = new X509Certificate2(Security.GetCertificateBytesFromBase64(MangaDexClient.RemoteSettings.TlsCertificate!.Certificate, Security.InputType.Certificate));
                         using var provider = new RSACryptoServiceProvider();
 
-                        provider.ImportRSAPrivateKey(MemoryMarshal.AsBytes(Security.GetCertificateBytesFromBase64(MangaDexClient.RemoteSettings!.TlsCertificate!.PrivateKey).AsSpan()), out _);
+                        provider.ImportRSAPrivateKey(MemoryMarshal.AsBytes(Security.GetCertificateBytesFromBase64(MangaDexClient.RemoteSettings.TlsCertificate.PrivateKey, Security.InputType.PrivateKey).AsSpan()), out _);
 
                         if (!string.IsNullOrWhiteSpace(ClientSettings.ClientHostname))
                             options.Listen(IPAddress.Parse(ClientSettings.ClientHostname), ClientSettings.ClientPort,
@@ -153,7 +157,12 @@ namespace MD.Home.Server
                                 });
                     });
 
-                    builder.ConfigureServices(services => services.AddSingleton(_ => MangaDexClient));
+                    builder.ConfigureServices(services =>
+                    {
+                        services.AddSingleton(typeof(ClientSettings), ClientSettings);
+                        services.AddSingleton(typeof(JsonSerializerOptions), SerializerOptions);
+                    });
+
                     builder.UseStartup<ImageServer>();
                 }).Build();
     }

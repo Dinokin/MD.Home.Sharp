@@ -44,7 +44,6 @@ namespace MD.Home.Server.Cache
                     throw new ObjectDisposedException($"This instance of {nameof(ConnectionPool)} has been disposed.");
                 
                 _isDisposed = true;
-                GC.SuppressFinalize(this);
             }
 
             for (var i = 0; i < _pool.Count; i++)
@@ -52,6 +51,8 @@ namespace MD.Home.Server.Cache
                 if (_pool.TryDequeue(out var connection))
                     connection.Dispose();
             }
+            
+            GC.SuppressFinalize(this);
         }
 
         private SqliteConnection BuildConnection()

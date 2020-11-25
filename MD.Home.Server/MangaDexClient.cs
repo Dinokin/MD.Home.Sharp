@@ -1,24 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
 using System.Security.Authentication;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using MD.Home.Server.Configuration;
-using MD.Home.Server.Serialization;
 using Serilog;
 using Constants = MD.Home.Server.Others.Constants;
 
 namespace MD.Home.Server
 {
-    public class MangaDexClient
+    public class MangaDexClient : IDisposable
     {
-        public ClientSettings ClientSettings { get; }
-        public JsonSerializerOptions JsonSerializerOptions { get; }
-        public HttpClient HttpClient { get; }
-
         public RemoteSettings RemoteSettings
         {
             get
@@ -29,48 +24,39 @@ namespace MD.Home.Server
                 return _remoteSettings;
             }
         }
-        
+
         private readonly ILogger _logger;
+        private readonly ClientSettings _clientSettings;
+        private readonly JsonSerializerOptions _serializerOptions;
+        
+        private readonly Timer _pingTimer;
 
-        private RemoteSettings? _remoteSettings;
-        private Task? _backgroundTask;
         private bool _isLoggedIn;
+        private RemoteSettings? _remoteSettings;
 
-        public MangaDexClient(ClientSettings clientSettings, HttpClient httpClient, ILogger logger)
+        public MangaDexClient(ILogger logger, ClientSettings clientSettings, JsonSerializerOptions serializerOptions)
         {
-            var snakePolicy = new SnakeCaseNamingPolicy();
-            
-            ClientSettings = clientSettings;
-            HttpClient = httpClient;
-            JsonSerializerOptions = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = snakePolicy,
-                DictionaryKeyPolicy = snakePolicy
-            };
             _logger = logger;
-            
-            HttpClient.Timeout = TimeSpan.FromSeconds(90);
+            _clientSettings = clientSettings;
+            _serializerOptions = serializerOptions;
+
+            _pingTimer = new Timer(PingControl, null, TimeSpan.FromSeconds(45), TimeSpan.FromSeconds(45));
         }
 
         public async Task LoginToControl()
         {
-            if (_remoteSettings != null && _isLoggedIn)
-                throw new InvalidOperationException();
-            
             _logger.Information("Connecting to the control server");
 
-            var message = JsonSerializer.Serialize(GetPingParameters());
-            var response = await HttpClient.PostAsync($"{Constants.ServerAddress}ping", new StringContent(message, Encoding.UTF8, "application/json"));
+            var message = JsonSerializer.Serialize(GetPingParameters(), _serializerOptions);
+            var response = await Program.HttpClient.PostAsync($"{Constants.ServerAddress}ping", new StringContent(message, Encoding.UTF8, "application/json"));
 
             if (response.IsSuccessStatusCode)
             {
-                _remoteSettings = JsonSerializer.Deserialize<RemoteSettings>(await response.Content.ReadAsStringAsync(), new JsonSerializerOptions {PropertyNamingPolicy = new SnakeCaseNamingPolicy()});
+                _remoteSettings = JsonSerializer.Deserialize<RemoteSettings>(await response.Content.ReadAsStringAsync(), _serializerOptions);
                 _isLoggedIn = true;
                 
                 if (_remoteSettings?.LatestBuild > Constants.ClientBuild)
                     _logger.Warning($"Outdated build detected! Latest: {_remoteSettings.LatestBuild}, Current: {Constants.ClientBuild}");
-                
-                SetupBackgroundTask();
             }
             else
                 throw new AuthenticationException();
@@ -78,33 +64,44 @@ namespace MD.Home.Server
 
         public async Task LogoutFromControl()
         {
-            if (_remoteSettings == null || !_isLoggedIn)
-                throw new InvalidOperationException("This client has not logged in to the control.");
-            
             _logger.Information("Disconnecting from the control server");
 
-            var message = JsonSerializer.Serialize(new Dictionary<string, object> { {"secret", ClientSettings.ClientSecret} });
-            var response = await HttpClient.PostAsync($"{Constants.ServerAddress}stop", new StringContent(message, Encoding.UTF8, "application/json"));
+            var message = JsonSerializer.Serialize(new Dictionary<string, object> { {"secret", _clientSettings.ClientSecret} }, _serializerOptions);
+            var response = await Program.HttpClient.PostAsync($"{Constants.ServerAddress}stop", new StringContent(message, Encoding.UTF8, "application/json"));
 
             _isLoggedIn = false;
             
             if (!response.IsSuccessStatusCode)
                 throw new AuthenticationException();
         }
-
-        private async Task PingControl()
+        
+        public void Dispose()
         {
-            if (_remoteSettings == null)
-                throw new InvalidOperationException();
-            
+            lock (this)
+            {
+                if (!_isLoggedIn)
+                    throw new ObjectDisposedException($"This instance of {nameof(MangaDexClient)} has been disposed.");
+
+                _isLoggedIn = false;
+            }
+
+            GC.SuppressFinalize(this);
+            _pingTimer.Dispose();
+        }
+
+        private async void PingControl(object? state)
+        {
+            if (_remoteSettings == null || !_isLoggedIn)
+                return;
+
             _logger.Information("Pinging the control server");
             
-            var message = JsonSerializer.Serialize(GetPingParameters());
+            var message = JsonSerializer.Serialize(GetPingParameters(), _serializerOptions);
             HttpResponseMessage response;
 
             try
             {
-                response = await HttpClient.PostAsync($"{Constants.ServerAddress}ping", new StringContent(message, Encoding.UTF8, "application/json"));
+                response = await Program.HttpClient.PostAsync($"{Constants.ServerAddress}ping", new StringContent(message, Encoding.UTF8, "application/json"));
             }
             catch
             {
@@ -115,7 +112,7 @@ namespace MD.Home.Server
 
             if (response.IsSuccessStatusCode)
             {
-                var remoteSettings = JsonSerializer.Deserialize<RemoteSettings>(await response.Content.ReadAsStringAsync(), JsonSerializerOptions);
+                var remoteSettings = JsonSerializer.Deserialize<RemoteSettings>(await response.Content.ReadAsStringAsync(), _serializerOptions);
                 
                 _logger.Information($"Server settings received: {remoteSettings}");
 
@@ -140,9 +137,9 @@ namespace MD.Home.Server
         {
             var message = new Dictionary<string, object>
             {
-                {"secret", ClientSettings.ClientSecret},
-                {"port", ClientSettings.ClientExternalPort != 0 ? ClientSettings.ClientExternalPort : ClientSettings.ClientPort},
-                {"disk_space", ClientSettings.MaxCacheSizeInMebibytes * 1024 * 1024},
+                {"secret", _clientSettings.ClientSecret},
+                {"port", _clientSettings.ClientExternalPort != 0 ? _clientSettings.ClientExternalPort : _clientSettings.ClientPort},
+                {"disk_space", _clientSettings.MaxCacheSizeInMebibytes * 1024 * 1024},
                 {"network_speed", 0},
                 {"build_version", Constants.ClientBuild}
             };
@@ -152,24 +149,7 @@ namespace MD.Home.Server
 
             return message;
         }
-
-        [SuppressMessage("ReSharper", "FunctionNeverReturns")]
-        private void SetupBackgroundTask()
-        {
-            _backgroundTask = new Task(async () =>
-            {
-                while (true)
-                {
-                    await Task.Delay(TimeSpan.FromSeconds(30));
-
-                    if (_isLoggedIn)
-                        await PingControl();
-                }
-            }, TaskCreationOptions.LongRunning);
-            
-            _backgroundTask.Start();
-        }
-
+        
         private bool ValidateSettings(RemoteSettings? remoteSettings) =>
             RemoteSettings.TlsCertificate?.Certificate == remoteSettings?.TlsCertificate?.Certificate &&
             RemoteSettings.TlsCertificate?.Certificate == remoteSettings?.TlsCertificate?.Certificate;
