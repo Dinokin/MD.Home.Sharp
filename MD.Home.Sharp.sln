@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MD.Home.Server", "MD.Home.Server\MD.Home.Server.csproj", "{AE1503DB-0C49-4E7C-B890-A4930FAAE592}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MD.Home.Sharp", "MD.Home.Sharp\MD.Home.Sharp.csproj", "{AE1503DB-0C49-4E7C-B890-A4930FAAE592}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
