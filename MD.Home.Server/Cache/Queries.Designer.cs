@@ -142,7 +142,7 @@ namespace MD.Home.Server.Cache {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to PRAGMA wal_checkpoint(PASSIVE);.
+        ///   Looks up a localized string similar to PRAGMA wal_checkpoint(FULL);.
         /// </summary>
         internal static string TriggerCheckpoint {
             get {

@@ -110,6 +110,20 @@ namespace MD.Home.Server.Cache
             
             ExecuteQueryWithoutResult(command);
         }
+
+        public void Dispose()
+        {
+            lock (this)
+            {
+                if (_isDisposed)
+                    throw new ObjectDisposedException($"This instance of {nameof(CacheEntryDao)} has been disposed.");
+                
+                _isDisposed = true;
+            }
+            
+            _connectionPool.Dispose();
+            GC.SuppressFinalize(this);
+        }
         
         private void CreateDatabase()
         {
@@ -129,20 +143,6 @@ namespace MD.Home.Server.Cache
             {
                 // Ignore
             }
-        }
-
-        public void Dispose()
-        {
-            lock (this)
-            {
-                if (_isDisposed)
-                    throw new ObjectDisposedException($"This instance of {nameof(CacheEntryDao)} has been disposed.");
-                
-                _isDisposed = true;
-            }
-            
-            _connectionPool.Dispose();
-            GC.SuppressFinalize(this);
         }
 
         private double GetAverageSizeOfContents()

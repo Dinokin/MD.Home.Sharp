@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography;
@@ -42,14 +43,13 @@ namespace MD.Home.Server
         static Program()
         {
             var namingPolicy = new SnakeCaseNamingPolicy();
-            
-            HttpClient = new HttpClient();
+
             ClientSettings = new ClientSettings();
             SerializerOptions = new JsonSerializerOptions {PropertyNamingPolicy = namingPolicy, DictionaryKeyPolicy = namingPolicy};
-            
             Configuration = new ConfigurationBuilder().AddJsonFile(Constants.SettingsFile, false).Build();
             Configuration.Bind(ClientSettings);
-            
+            HttpClient = new HttpClient(GetHttpClientHandler());
+
             ValidateSettings();
             
             Logger = new LoggerConfiguration()
@@ -165,5 +165,22 @@ namespace MD.Home.Server
 
                     builder.UseStartup<ImageServer>();
                 }).Build();
+
+        private static SocketsHttpHandler GetHttpClientHandler()
+        {
+            var httpHandler = new SocketsHttpHandler();
+
+            httpHandler.ConnectCallback += async (context, token) =>
+            {
+                var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                socket.Bind(new IPEndPoint(IPAddress.Parse(ClientSettings.ClientHostname), 0));
+                
+                await socket.ConnectAsync(context.DnsEndPoint, token);
+
+                return new NetworkStream(socket, true);
+            };
+
+            return httpHandler;
+        }
     }
 }

@@ -31,7 +31,7 @@
         <value>CREATE TABLE cache_entries (id CHARACTER(32) PRIMARY KEY, content_type VARCHAR(20) NOT NULL, last_modified DATETIME NOT NULL, last_accessed DATETIME NOT NULL, size UNSIGNED BIG INT NOT NULL, content BLOB NOT NULL);</value>>
     </data>
     <data name="TriggerCheckpoint" xml:space="preserve">
-        <value>PRAGMA wal_checkpoint(PASSIVE);</value>
+        <value>PRAGMA wal_checkpoint(FULL);</value>
     </data>
     <data name="TotalSizeOfContents" xml:space="preserve">
         <value>SELECT SUM(size) FROM cache_entries;</value>

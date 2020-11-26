@@ -27,7 +27,7 @@ namespace MD.Home.Server.Cache
             _cacheEntryDao = new CacheEntryDao(Constants.CacheFile, 100);
             _memoryCache = new MemoryCache(new MemoryCacheOptions {SizeLimit = clientSettings.MaxPagesInMemory});
 
-            _insertionTimer = new Timer(InsertionTasks, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
+            _insertionTimer = new Timer(InsertionTasks, null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
         }
 
         public CacheEntry? GetEntry(Guid id)
@@ -49,17 +49,7 @@ namespace MD.Home.Server.Cache
             if (entry == null)
                 return null;
             
-            entry.LastAccessed = DateTime.UtcNow;
-            
-            var entryOptions = new MemoryCacheEntryOptions
-            {
-                Size = 1,
-                SlidingExpiration = TimeSpan.FromHours(1),
-                PostEvictionCallbacks = { new PostEvictionCallbackRegistration() }
-            };
-
-            entryOptions.PostEvictionCallbacks.First().EvictionCallback += (key, value, _, _) => _cacheEntryDao.UpdateEntryLastAccessDate((Guid) key, ((CacheEntry) value).LastAccessed);
-            _memoryCache.Set(id, entry, entryOptions);
+            InsertIntoMemory(entry);
 
             return entry;
         }
@@ -69,6 +59,7 @@ namespace MD.Home.Server.Cache
             if (_isDisposed)
                 throw new ObjectDisposedException($"This instance of {nameof(CacheManager)} has been disposed.");
             
+            InsertIntoMemory(cacheEntry);
             _insertionQueue.Enqueue(cacheEntry);
         }
 
@@ -91,15 +82,41 @@ namespace MD.Home.Server.Cache
             _cacheEntryDao.Dispose();
         }
 
+        private void InsertIntoMemory(CacheEntry entry)
+        {
+            entry.LastAccessed = DateTime.UtcNow;
+            
+            var entryOptions = new MemoryCacheEntryOptions
+            {
+                Size = 1,
+                SlidingExpiration = TimeSpan.FromHours(1),
+                PostEvictionCallbacks = { new PostEvictionCallbackRegistration() }
+            };
+
+            entryOptions.PostEvictionCallbacks.First().EvictionCallback += (key, value, _, _) =>
+            {
+                try
+                {
+                    _cacheEntryDao.UpdateEntryLastAccessDate((Guid) key, ((CacheEntry) value).LastAccessed);
+                }
+                catch
+                {
+                    // Ignore
+                }
+            };
+            
+            _memoryCache.Set(entry.Id, entry, entryOptions);
+        }
+
         private void ConsolidateDatabase()
         {
             if (_cacheEntryDao.TotalSizeOfContents is var totalSizeOfContents && totalSizeOfContents > _maxCacheSize)
-                ReduceCacheToSizeLimit(_maxCacheSize / 100 * 10);
+                ReduceCacheBySize(_maxCacheSize / 100 * 10);
 
             _cacheEntryDao.TriggerCheckpoint();
         }
         
-        private void ReduceCacheToSizeLimit(ulong size)
+        private void ReduceCacheBySize(ulong size)
         {
             var averageSize = _cacheEntryDao.AverageSizeOfContents;
 
@@ -108,27 +125,16 @@ namespace MD.Home.Server.Cache
 
         private void InsertionTasks(object? state)
         {
-            var count = 0;
-                
-            while (_insertionQueue.TryDequeue(out var entry))
+            try
             {
-                try
-                {
+                while (_insertionQueue.TryDequeue(out var entry))
                     _cacheEntryDao.InsertEntry(entry);
 
-                    count++;
-
-                    if (count <= 10)
-                        continue;
-
-                    ConsolidateDatabase();
-                        
-                    count = 0;
-                }
-                catch
-                {
-                    // Ignore
-                }
+                ConsolidateDatabase();
+            }
+            catch
+            {
+                // Ignore
             }
         }
     }
