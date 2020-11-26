@@ -121,8 +121,8 @@ namespace MD.Home.Sharp.Cache
                 _isDisposed = true;
             }
             
-            _connectionPool.Dispose();
             GC.SuppressFinalize(this);
+            _connectionPool.Dispose();
         }
         
         private void CreateDatabase()

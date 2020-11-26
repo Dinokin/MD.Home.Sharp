@@ -8,6 +8,7 @@
         <AssemblyVersion>1.0.0</AssemblyVersion>
         <FileVersion>1.0.0</FileVersion>
     </PropertyGroup>
+    
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
       <DebugSymbols>false</DebugSymbols>
       <DebugType>none</DebugType>
@@ -18,17 +19,10 @@
             <Generator>ResXFileCodeGenerator</Generator>
             <LastGenOutput>Queries.Designer.cs</LastGenOutput>
         </EmbeddedResource>
-    </ItemGroup>
-    
-    <ItemGroup>
-        <EmbeddedResource Update="Cache\Queries.resx">
-            <Generator>ResXFileCodeGenerator</Generator>
-            <LastGenOutput>Queries.Designer.cs</LastGenOutput>
-        </EmbeddedResource>
         <Compile Update="Cache\Queries.Designer.cs">
             <DesignTime>True</DesignTime>
             <AutoGen>True</AutoGen>
-            <DependentUpon>Strings.resx</DependentUpon>
+            <DependentUpon>Queries.resx</DependentUpon>
         </Compile>
     </ItemGroup>
     

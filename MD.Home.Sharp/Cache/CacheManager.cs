@@ -74,6 +74,7 @@ namespace MD.Home.Sharp.Cache
             }
             
             GC.SuppressFinalize(this);
+            
             _insertionTimer.Dispose();
             _memoryCache.Compact(100);
             
@@ -111,7 +112,7 @@ namespace MD.Home.Sharp.Cache
         private void ConsolidateDatabase()
         {
             if (_cacheEntryDao.TotalSizeOfContents is var totalSizeOfContents && totalSizeOfContents > _maxCacheSize)
-                ReduceCacheBySize(_maxCacheSize / 100 * 10);
+                ReduceCacheBySize(Convert.ToUInt64(Math.Ceiling(_maxCacheSize / 100d)));
 
             _cacheEntryDao.TriggerCheckpoint();
         }
