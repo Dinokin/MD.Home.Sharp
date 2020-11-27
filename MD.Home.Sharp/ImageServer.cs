@@ -11,7 +11,7 @@ using Serilog;
 namespace MD.Home.Sharp
 {
     [SuppressMessage("ReSharper", "CA1822")]
-    public class ImageServer
+    internal class ImageServer
     {
         public void ConfigureServices(IServiceCollection services)
         {
@@ -44,7 +44,7 @@ namespace MD.Home.Sharp
                     httpContext.Items.TryGetValue("TimeTaken", out var timeTaken);
 
                     context.Set("TimeTaken", timeTaken ?? (DateTime.UtcNow - (DateTime) startTime!).TotalMilliseconds);
-                    context.Set("FilteredPath", httpContext.Request.Path.Value.GetFilteredPath());
+                    context.Set("FilteredPath", httpContext.Request.Path.Value.RemoveToken());
                     context.Set("IPAddress", httpContext.Connection.RemoteIpAddress);
                 };
             });

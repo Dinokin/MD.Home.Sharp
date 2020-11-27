@@ -13,7 +13,7 @@ using Sodium;
 namespace MD.Home.Sharp.Filters
 {
     [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
-    public class TokenValidator : IActionFilter
+    internal class TokenValidator : IActionFilter
     {
         private readonly ILogger _logger;
         private readonly JsonSerializerOptions _serializerOptions;
@@ -28,7 +28,7 @@ namespace MD.Home.Sharp.Filters
         [SuppressMessage("ReSharper", "RedundantJumpStatement")]
         public void OnActionExecuting(ActionExecutingContext context)
         {
-            var path = context.HttpContext.Request.Path.Value.GetFilteredPath();
+            var path = context.HttpContext.Request.Path.Value.RemoveToken();
 
             if (!context.ActionArguments.TryGetValue("token", out var token))
                 return;

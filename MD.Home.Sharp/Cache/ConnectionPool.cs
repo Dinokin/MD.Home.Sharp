@@ -5,19 +5,17 @@ using Microsoft.Data.Sqlite;
 
 namespace MD.Home.Sharp.Cache
 {
-    public class ConnectionPool : IDisposable
+    internal class ConnectionPool : IDisposable
     {
         private readonly string _connectionString;
         private readonly ConcurrentQueue<SqliteConnection> _pool;
 
         private bool _isDisposed;
 
-        public ConnectionPool(string connectionString, ushort poolSize)
+        public ConnectionPool(string connectionString)
         {
             _connectionString = connectionString;
             _pool = new ConcurrentQueue<SqliteConnection>();
-            
-            FillPool(poolSize <= 0 ? 1 : poolSize);
         }
         
         public SqliteConnection GetConnection()
@@ -25,15 +23,15 @@ namespace MD.Home.Sharp.Cache
             if (_isDisposed)
                 throw new ObjectDisposedException($"This instance of {nameof(ConnectionPool)} has been disposed.");
 
-            SqliteConnection? connection;
-            
-            do 
-                _pool.TryDequeue(out connection);
-            while (connection == null);
-            
-            connection.Open();
-            
-            return connection;
+            return _pool.TryDequeue(out var connection) ? connection : BuildConnection();
+        }
+        
+        public void ReturnConnection(SqliteConnection connection)
+        {
+            if (_isDisposed || connection.State != ConnectionState.Open)
+                DestroyConnection(connection);
+            else 
+                _pool.Enqueue(connection);
         }
        
         public void Dispose()
@@ -46,39 +44,32 @@ namespace MD.Home.Sharp.Cache
                 _isDisposed = true;
             }
 
-            for (var i = 0; i < _pool.Count; i++)
-            {
-                if (_pool.TryDequeue(out var connection))
-                    connection.Dispose();
-            }
-            
             GC.SuppressFinalize(this);
+
+            while (_pool.TryDequeue(out var connection))
+                DestroyConnection(connection);
         }
 
         private SqliteConnection BuildConnection()
         {
             var connection = new SqliteConnection(_connectionString) {DefaultTimeout = 90};
-
-            connection.StateChange += (sender, _) => ReturnConnection((SqliteConnection) sender);
-
+            
+            connection.Open();
+            
             return connection;
         }
 
-        private void FillPool(ushort poolSize)
+        private static void DestroyConnection(IDbConnection connection)
         {
-            for (var i = 0; i < poolSize; i++)
-                _pool.Enqueue(BuildConnection());
-        }
-
-        private void ReturnConnection(SqliteConnection connection)
-        {
-            if (connection.State != ConnectionState.Closed)
-                return;
-            
-            if (_isDisposed)
+            try
+            {
+                connection.Close();
                 connection.Dispose();
-            
-            _pool.Enqueue(connection);
+            }
+            catch
+            {
+                // Ignore
+            }
         }
     }
 }

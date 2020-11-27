@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 namespace MD.Home.Sharp.Filters
 {
     [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
-    public class HeaderInjector : IResultFilter
+    internal class HeaderInjector : IResultFilter
     {
         public void OnResultExecuting(ResultExecutingContext context)
         {

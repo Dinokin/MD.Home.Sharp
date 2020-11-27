@@ -8,7 +8,7 @@ using Serilog;
 namespace MD.Home.Sharp.Filters
 {
     [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
-    public class ReferrerValidator : IActionFilter
+    internal class ReferrerValidator : IActionFilter
     {
         private readonly ILogger _logger;
 
@@ -18,7 +18,7 @@ namespace MD.Home.Sharp.Filters
         [SuppressMessage("ReSharper", "RedundantJumpStatement")]
         public void OnActionExecuting(ActionExecutingContext context)
         {
-            var path = context.HttpContext.Request.Path.Value.GetFilteredPath();
+            var path = context.HttpContext.Request.Path.Value.RemoveToken();
             string[] allowedReferrers = {"https://mangadex.org", "https://mangadex.network", string.Empty};
 
             if (context.HttpContext.Request.Headers.TryGetValue("Referer", out var referer) && !referer.Any(str => allowedReferrers.Any(str.Contains)))

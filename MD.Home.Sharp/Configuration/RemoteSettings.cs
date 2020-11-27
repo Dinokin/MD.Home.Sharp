@@ -9,7 +9,7 @@ namespace MD.Home.Sharp.Configuration
     [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
     [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
-    public sealed class RemoteSettings
+    internal sealed class RemoteSettings
     {
         public string Url { get; }
         

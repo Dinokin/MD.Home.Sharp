@@ -26,7 +26,7 @@ using Constants = MD.Home.Sharp.Others.Constants;
 
 namespace MD.Home.Sharp
 {
-    public static class Program
+    internal static class Program
     {
         public static readonly MangaDexClient MangaDexClient;
         public static readonly HttpClient HttpClient;

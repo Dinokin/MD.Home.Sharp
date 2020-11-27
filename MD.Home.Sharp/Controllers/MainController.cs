@@ -41,7 +41,7 @@ namespace MD.Home.Sharp.Controllers
         {
             var url = $"/{(dataSaver ? "data-saver" : "data")}/{chapterId:N}/{name}";
             
-            var entry = _cacheManager.GetEntry(url.GetHashAsGuid());
+            var entry = _cacheManager.GetEntry(url.GetMd5HashAsGuid());
 
             return entry == null ? await HandleCacheMiss(url) : HandleCacheHit(url, entry);
         }
@@ -93,7 +93,7 @@ namespace MD.Home.Sharp.Controllers
 
             var entry = new CacheEntry
             {
-                Id = url.GetHashAsGuid(),
+                Id = url.GetMd5HashAsGuid(),
                 ContentType = contentType!,
                 LastModified = lastModified.GetValueOrDefault(DateTimeOffset.UtcNow).UtcDateTime,
                 LastAccessed = DateTime.UtcNow,

@@ -142,7 +142,7 @@ namespace MD.Home.Sharp.Cache {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to PRAGMA wal_checkpoint(FULL);.
+        ///   Looks up a localized string similar to PRAGMA wal_checkpoint(TRUNCATE);.
         /// </summary>
         internal static string TriggerCheckpoint {
             get {

@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.WebUtilities;
 
 namespace MD.Home.Sharp.Serialization
 {
-    public class Base64BytesDecoder : JsonConverter<byte[]>
+    internal class Base64BytesDecoder : JsonConverter<byte[]>
     {
         public override byte[]? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {

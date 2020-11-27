@@ -2,7 +2,7 @@
 
 namespace MD.Home.Sharp.Others
 {
-    public static class Constants
+    internal static class Constants
     {
         public const string ServerAddress = "https://api.mangadex.network/";
         public const string SettingsFile = "settings.json";

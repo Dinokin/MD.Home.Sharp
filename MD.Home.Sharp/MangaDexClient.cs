@@ -12,7 +12,7 @@ using Constants = MD.Home.Sharp.Others.Constants;
 
 namespace MD.Home.Sharp
 {
-    public class MangaDexClient : IDisposable
+    internal class MangaDexClient : IDisposable
     {
         public RemoteSettings RemoteSettings
         {

@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace MD.Home.Sharp.Serialization
 {
-    public class SnakeCaseNamingPolicy : JsonNamingPolicy
+    internal class SnakeCaseNamingPolicy : JsonNamingPolicy
     {
         private const char Underscore = '_';
         private const char Space = ' ';

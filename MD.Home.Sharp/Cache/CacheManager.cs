@@ -16,14 +16,14 @@ namespace MD.Home.Sharp.Cache
         private readonly MemoryCache _memoryCache;
 
         private readonly Timer _insertionTimer;
-        private readonly ConcurrentQueue<CacheEntry> _insertionQueue = new();
+        private readonly ConcurrentQueue<CacheEntry> _insertionQueue;
 
         private bool _isDisposed;
 
         public CacheManager(ClientSettings clientSettings)
         {
             _maxCacheSize = Convert.ToUInt64(clientSettings.MaxCacheSizeInMebibytes * 1024 * 1024);
-
+            _insertionQueue = new ConcurrentQueue<CacheEntry>();
             _cacheEntryDao = new CacheEntryDao(Constants.CacheFile, 100);
             _memoryCache = new MemoryCache(new MemoryCacheOptions {SizeLimit = clientSettings.MaxPagesInMemory});
 
@@ -76,8 +76,10 @@ namespace MD.Home.Sharp.Cache
             GC.SuppressFinalize(this);
             
             _insertionTimer.Dispose();
-            _memoryCache.Compact(100);
             
+            _memoryCache.Compact(100);
+            _memoryCache.Dispose();
+
             ConsolidateDatabase();
             
             _cacheEntryDao.Dispose();
@@ -90,7 +92,8 @@ namespace MD.Home.Sharp.Cache
             var entryOptions = new MemoryCacheEntryOptions
             {
                 Size = 1,
-                SlidingExpiration = TimeSpan.FromHours(1),
+                SlidingExpiration = TimeSpan.FromMinutes(10),
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1),
                 PostEvictionCallbacks = { new PostEvictionCallbackRegistration() }
             };
 

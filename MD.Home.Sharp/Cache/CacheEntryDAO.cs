@@ -5,7 +5,7 @@ using Microsoft.Data.Sqlite;
 
 namespace MD.Home.Sharp.Cache
 {
-    public class CacheEntryDao : IDisposable
+    internal class CacheEntryDao : IDisposable
     {
         public double AverageSizeOfContents => GetAverageSizeOfContents();
         public ulong TotalSizeOfContents => GetTotalSizeOfContents();
@@ -23,7 +23,7 @@ namespace MD.Home.Sharp.Cache
                 Cache = SqliteCacheMode.Shared
             };
 
-            _connectionPool = new ConnectionPool(connectionStringBuilder.ToString(), connectionPoolSize);
+            _connectionPool = new ConnectionPool(connectionStringBuilder.ToString());
             CreateDatabase();
         }
 
@@ -122,6 +122,7 @@ namespace MD.Home.Sharp.Cache
             }
             
             GC.SuppressFinalize(this);
+            
             _connectionPool.Dispose();
         }
         
@@ -195,6 +196,12 @@ namespace MD.Home.Sharp.Cache
             command.Disposed += (sender, _) => CommandDisposer(sender as SqliteCommand);
         }
 
-        private static void CommandDisposer(SqliteCommand? command) => command?.Connection?.Close();
+        private void CommandDisposer(SqliteCommand? command)
+        {
+            if (command == null)
+                return;
+            
+            _connectionPool.ReturnConnection(command.Connection);
+        }
     }
 }

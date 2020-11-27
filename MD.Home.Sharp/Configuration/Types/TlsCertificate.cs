@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace MD.Home.Sharp.Configuration.Types
 {
     [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
-    public sealed class TlsCertificate
+    internal sealed class TlsCertificate
     {
         public string Certificate { get; }
         public string PrivateKey { get; }
@@ -16,13 +16,13 @@ namespace MD.Home.Sharp.Configuration.Types
             PrivateKey = privateKey;
             CreatedAt = createdAt;
         }
+
+        public override bool Equals(object? obj) => ReferenceEquals(this, obj) || obj is TlsCertificate other && this == other;
+
+        public override int GetHashCode() => HashCode.Combine(Certificate, PrivateKey, CreatedAt);
         
         public static bool operator ==(TlsCertificate? left, TlsCertificate? right) => left?.Certificate == right?.Certificate && left?.PrivateKey == right?.PrivateKey && left?.CreatedAt == right?.CreatedAt;
         
         public static bool operator !=(TlsCertificate? left, TlsCertificate? right) => !(left == right);
-        
-        public override bool Equals(object? obj) => ReferenceEquals(this, obj) || obj is TlsCertificate other && this == other;
-
-        public override int GetHashCode() => HashCode.Combine(Certificate, PrivateKey, CreatedAt);
     }
 }

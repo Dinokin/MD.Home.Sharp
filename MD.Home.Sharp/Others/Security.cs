@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace MD.Home.Sharp.Others
 {
-    public static class Security
+    internal static class Security
     {
         public enum InputType
         {

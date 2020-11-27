@@ -5,13 +5,13 @@ using System.Text.RegularExpressions;
 
 namespace MD.Home.Sharp.Extensions
 {
-    public static class StringExtensions
+    internal static class StringExtensions
     {
         public static bool IsValidSecret(this string source) => !string.IsNullOrWhiteSpace(source) && Regex.IsMatch(source, "^[a-zA-Z0-9]{52}$");
 
         public static bool IsImageMimeType(this string? source) => !string.IsNullOrWhiteSpace(source) && Regex.IsMatch(source, "^image/");
 
-        public static string? GetFilteredPath(this string? source)
+        public static string? RemoveToken(this string? source)
         {
             if (string.IsNullOrWhiteSpace(source))
                 return source;
@@ -19,7 +19,7 @@ namespace MD.Home.Sharp.Extensions
             return source.Contains("/data") ? source.Substring(source.IndexOf("/data", StringComparison.InvariantCulture)) : source;
         }
         
-        public static Guid GetHashAsGuid(this string source)
+        public static Guid GetMd5HashAsGuid(this string source)
         {
             using var hasher = MD5.Create();
             var hashBytes = hasher.ComputeHash(Encoding.UTF8.GetBytes(source));

@@ -2,7 +2,7 @@
 
 namespace MD.Home.Sharp.Exceptions
 {
-    public class ClientSettingsException : Exception
+    internal class ClientSettingsException : Exception
     {
         public ClientSettingsException(string message) : base(message) { }
     }

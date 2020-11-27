@@ -7,7 +7,7 @@ namespace MD.Home.Sharp.Others
     [SuppressMessage("ReSharper", "MemberCanBePrivate.Global")]
     [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
     [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
-    public sealed class Token
+    internal sealed class Token
     {
         public string ClientId { get; }
         
