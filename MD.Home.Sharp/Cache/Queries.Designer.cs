@@ -61,11 +61,11 @@ namespace MD.Home.Sharp.Cache {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to SELECT AVG(size) FROM cache_entries;.
+        ///   Looks up a localized string similar to SELECT COUNT(*) FROM cache_entries;.
         /// </summary>
-        internal static string AverageSizeOfContents {
+        internal static string AmountOfCacheEntries {
             get {
-                return ResourceManager.GetString("AverageSizeOfContents", resourceCulture);
+                return ResourceManager.GetString("AmountOfCacheEntries", resourceCulture);
             }
         }
         
@@ -81,9 +81,9 @@ namespace MD.Home.Sharp.Cache {
         /// <summary>
         ///   Looks up a localized string similar to DELETE FROM cache_entries WHERE id IN (SELECT id FROM cache_entries ORDER BY last_accessed LIMIT $amount);.
         /// </summary>
-        internal static string DeleteLeastAccessedEntries {
+        internal static string DeleteLeastAccessedCacheEntries {
             get {
-                return ResourceManager.GetString("DeleteLeastAccessedEntries", resourceCulture);
+                return ResourceManager.GetString("DeleteLeastAccessedCacheEntries", resourceCulture);
             }
         }
         
@@ -97,20 +97,20 @@ namespace MD.Home.Sharp.Cache {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to SELECT id, content_type, last_modified, last_accessed, size, content FROM cache_entries WHERE id = $id;.
+        ///   Looks up a localized string similar to SELECT id, content_type, last_modified, content FROM cache_entries WHERE id = $id;.
         /// </summary>
-        internal static string GetEntryById {
+        internal static string GetCacheEntryById {
             get {
-                return ResourceManager.GetString("GetEntryById", resourceCulture);
+                return ResourceManager.GetString("GetCacheEntryById", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to INSERT INTO cache_entries (id, content_type, last_modified, last_accessed, size, content) VALUES ($id, $content_type, $last_modified, $last_accessed, $size, $content);.
+        ///   Looks up a localized string similar to INSERT INTO cache_entries (id, content_type, last_modified, last_accessed, content) VALUES ($id, $content_type, $last_modified, $last_accessed, $content);.
         /// </summary>
-        internal static string InsertEntry {
+        internal static string InsertCacheEntry {
             get {
-                return ResourceManager.GetString("InsertEntry", resourceCulture);
+                return ResourceManager.GetString("InsertCacheEntry", resourceCulture);
             }
         }
         
@@ -133,15 +133,6 @@ namespace MD.Home.Sharp.Cache {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to SELECT SUM(size) FROM cache_entries;.
-        /// </summary>
-        internal static string TotalSizeOfContents {
-            get {
-                return ResourceManager.GetString("TotalSizeOfContents", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to PRAGMA wal_checkpoint(TRUNCATE);.
         /// </summary>
         internal static string TriggerCheckpoint {
@@ -153,9 +144,9 @@ namespace MD.Home.Sharp.Cache {
         /// <summary>
         ///   Looks up a localized string similar to UPDATE cache_entries SET last_accessed = $last_accessed WHERE id = $id;.
         /// </summary>
-        internal static string UpdateEntryLastAccessDate {
+        internal static string UpdateCacheEntryLastAccessDate {
             get {
-                return ResourceManager.GetString("UpdateEntryLastAccessDate", resourceCulture);
+                return ResourceManager.GetString("UpdateCacheEntryLastAccessDate", resourceCulture);
             }
         }
     }

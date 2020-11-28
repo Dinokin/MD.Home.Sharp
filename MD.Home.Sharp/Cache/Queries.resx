@@ -27,27 +27,24 @@
         <value>PRAGMA cache_size=0;</value>
     </data>
     <data name="CreateDatabase" xml:space="preserve">
-        <value>CREATE TABLE cache_entries (id CHARACTER(32) PRIMARY KEY, content_type VARCHAR(20) NOT NULL, last_modified DATETIME NOT NULL, last_accessed DATETIME NOT NULL, size UNSIGNED BIG INT NOT NULL, content BLOB NOT NULL);</value>>
+        <value>CREATE TABLE cache_entries (id CHARACTER(32) PRIMARY KEY, content_type VARCHAR(20) NOT NULL, last_modified DATETIME NOT NULL, last_accessed DATETIME NOT NULL, content BLOB NOT NULL);</value>>
     </data>
     <data name="TriggerCheckpoint" xml:space="preserve">
         <value>PRAGMA wal_checkpoint(TRUNCATE);</value>
     </data>
-    <data name="TotalSizeOfContents" xml:space="preserve">
-        <value>SELECT SUM(size) FROM cache_entries;</value>
+    <data name="GetCacheEntryById" xml:space="preserve">
+        <value>SELECT id, content_type, last_modified, content FROM cache_entries WHERE id = $id;</value>
     </data>
-    <data name="AverageSizeOfContents" xml:space="preserve">
-        <value>SELECT AVG(size) FROM cache_entries;</value>
+    <data name="InsertCacheEntry" xml:space="preserve">
+        <value>INSERT INTO cache_entries (id, content_type, last_modified, last_accessed, content) VALUES ($id, $content_type, $last_modified, $last_accessed, $content);</value>
     </data>
-    <data name="GetEntryById" xml:space="preserve">
-        <value>SELECT id, content_type, last_modified, last_accessed, size, content FROM cache_entries WHERE id = $id;</value>
-    </data>
-    <data name="InsertEntry" xml:space="preserve">
-        <value>INSERT INTO cache_entries (id, content_type, last_modified, last_accessed, size, content) VALUES ($id, $content_type, $last_modified, $last_accessed, $size, $content);</value>
-    </data>
-    <data name="UpdateEntryLastAccessDate" xml:space="preserve">
+    <data name="UpdateCacheEntryLastAccessDate" xml:space="preserve">
         <value>UPDATE cache_entries SET last_accessed = $last_accessed WHERE id = $id;</value>
     </data>
-    <data name="DeleteLeastAccessedEntries" xml:space="preserve">
+    <data name="DeleteLeastAccessedCacheEntries" xml:space="preserve">
         <value>DELETE FROM cache_entries WHERE id IN (SELECT id FROM cache_entries ORDER BY last_accessed LIMIT $amount);</value>
+    </data>
+    <data name="AmountOfCacheEntries" xml:space="preserve">
+        <value>SELECT COUNT(*) FROM cache_entries;</value>
     </data>
 </root>

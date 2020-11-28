@@ -7,18 +7,29 @@ namespace MD.Home.Sharp.Cache
 {
     internal class CacheEntryDao : IDisposable
     {
-        public double AverageSizeOfContents => GetAverageSizeOfContents();
-        public ulong TotalSizeOfContents => GetTotalSizeOfContents();
+        public ulong AmountOfCacheEntries
+        {
+            get
+            {
+                if (_isDisposed)
+                    throw new ObjectDisposedException($"This instance of {nameof(CacheEntryDao)} has been disposed.");
+                
+                using var command = new SqliteCommand(Queries.AmountOfCacheEntries);
+                using var reader = ExecuteQueryWithResult(command, CommandBehavior.SingleResult);
+
+                return reader.Read() ? Convert.ToUInt64(reader.GetInt64(0)) : 0;
+            }
+        }
 
         private readonly ConnectionPool _connectionPool;
 
         private bool _isDisposed;
 
-        public CacheEntryDao(string fileName, ushort connectionPoolSize)
+        public CacheEntryDao(string dataSource)
         {
             var connectionStringBuilder = new SqliteConnectionStringBuilder
             {
-                DataSource = fileName,
+                DataSource = dataSource,
                 Mode = SqliteOpenMode.ReadWriteCreate,
                 Cache = SqliteCacheMode.Shared
             };
@@ -27,13 +38,13 @@ namespace MD.Home.Sharp.Cache
             CreateDatabase();
         }
 
-        public CacheEntry? GetEntryById(Guid entryId)
+        public CacheEntry? GetCacheEntryById(Guid cacheEntryId)
         {
             if (_isDisposed)
                 throw new ObjectDisposedException($"This instance of {nameof(CacheEntryDao)} has been disposed.");
             
-            using var command = new SqliteCommand(Queries.GetEntryById);
-            command.Parameters.Add(new SqliteParameter("$id", entryId.ToString("N")));
+            using var command = new SqliteCommand(Queries.GetCacheEntryById);
+            command.Parameters.Add(new SqliteParameter("$id", cacheEntryId.ToString("N")));
 
             using var reader = ExecuteQueryWithResult(command, CommandBehavior.SingleResult);
 
@@ -44,21 +55,19 @@ namespace MD.Home.Sharp.Cache
                 {
                     Id = reader.GetGuid("id"),
                     ContentType = reader.GetString("content_type"),
-                    LastAccessed = reader.GetDateTime("last_accessed"),
                     LastModified = reader.GetDateTime("last_modified"),
-                    Size = Convert.ToUInt64(reader.GetInt64("size")),
                     Content = reader.GetStream("content").GetBytes()
                 };
             
             return cacheEntry;
         }
 
-        public void InsertEntry(CacheEntry cacheEntry)
+        public void InsertCacheEntry(CacheEntry cacheEntry)
         {
             if (_isDisposed)
                 throw new ObjectDisposedException($"This instance of {nameof(CacheEntryDao)} has been disposed.");
             
-            using var command = new SqliteCommand(Queries.InsertEntry);
+            using var command = new SqliteCommand(Queries.InsertCacheEntry);
             
             command.Parameters.AddRange(new []
             {
@@ -66,7 +75,6 @@ namespace MD.Home.Sharp.Cache
                 new SqliteParameter("$content_type", cacheEntry.ContentType),
                 new SqliteParameter("$last_accessed", cacheEntry.LastAccessed),
                 new SqliteParameter("$last_modified", cacheEntry.LastModified),
-                new SqliteParameter("$size", cacheEntry.Size),
                 new SqliteParameter("$content", cacheEntry.Content)
             });
             
@@ -78,7 +86,7 @@ namespace MD.Home.Sharp.Cache
             if (_isDisposed)
                 throw new ObjectDisposedException($"This instance of {nameof(CacheEntryDao)} has been disposed.");
             
-            using var command = new SqliteCommand(Queries.UpdateEntryLastAccessDate);
+            using var command = new SqliteCommand(Queries.UpdateCacheEntryLastAccessDate);
             
             command.Parameters.AddRange(new []
             {
@@ -89,12 +97,12 @@ namespace MD.Home.Sharp.Cache
             ExecuteQueryWithoutResult(command);
         }
 
-        public void DeleteLeastAccessedEntries(uint amount)
+        public void DeleteLeastAccessedEntries(ulong amount)
         {
             if (_isDisposed)
                 throw new ObjectDisposedException($"This instance of {nameof(CacheEntryDao)} has been disposed.");
 
-            using var command = new SqliteCommand(Queries.DeleteLeastAccessedEntries);
+            using var command = new SqliteCommand(Queries.DeleteLeastAccessedCacheEntries);
 
             command.Parameters.Add(new SqliteParameter("$amount", amount));
 
@@ -143,36 +151,6 @@ namespace MD.Home.Sharp.Cache
             catch
             {
                 // Ignore
-            }
-        }
-
-        private double GetAverageSizeOfContents()
-        {
-            try
-            {
-                using var command = new SqliteCommand(Queries.AverageSizeOfContents);
-                using var reader = ExecuteQueryWithResult(command, CommandBehavior.SingleResult);
-
-                return reader.Read() ? reader.GetDouble(0) : 0;
-            }
-            catch
-            {
-                return 0;
-            }
-        }
-        
-        private ulong GetTotalSizeOfContents()
-        {
-            try
-            {
-                using var command = new SqliteCommand(Queries.TotalSizeOfContents);
-                using var reader = ExecuteQueryWithResult(command, CommandBehavior.SingleResult);
-
-                return reader.Read() ? Convert.ToUInt64(reader.GetInt64(0)) : 0;
-            }
-            catch
-            {
-                return 0;
             }
         }
 

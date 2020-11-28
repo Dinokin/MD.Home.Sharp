@@ -41,9 +41,9 @@ namespace MD.Home.Sharp.Controllers
         {
             var url = $"/{(dataSaver ? "data-saver" : "data")}/{chapterId:N}/{name}";
             
-            var entry = _cacheManager.GetEntry(url.GetMd5HashAsGuid());
+            var cacheEntry = _cacheManager.GetCacheEntry(url.GetMd5HashAsGuid());
 
-            return entry == null ? await HandleCacheMiss(url) : HandleCacheHit(url, entry);
+            return cacheEntry == null ? await HandleCacheMiss(url) : HandleCacheHit(url, cacheEntry);
         }
 
         private async Task<IActionResult> HandleCacheMiss(string url)
@@ -91,26 +91,25 @@ namespace MD.Home.Sharp.Controllers
 
             _logger.Information($"Upstream query for {url} succeeded");
 
-            var entry = new CacheEntry
+            var cacheEntry = new CacheEntry
             {
                 Id = url.GetMd5HashAsGuid(),
                 ContentType = contentType!,
                 LastModified = lastModified.GetValueOrDefault(DateTimeOffset.UtcNow).UtcDateTime,
                 LastAccessed = DateTime.UtcNow,
-                Size = Convert.ToUInt64(content.LongLength),
                 Content = content
             };
 
-            _cacheManager.InsertEntry(entry);
+            _cacheManager.InsertCacheEntry(cacheEntry);
 
             if (contentLength != null)
-                Response.Headers.Add("Content-Length", entry.Size.ToString());
+                Response.Headers.Add("Content-Length", contentLength.ToString());
             else
                 Response.Headers.Add("Transfer-Encoding", "chunked");
 
             Response.Headers.Add("X-Cache", "MISS");
 
-            return ReturnFile(entry);
+            return ReturnFile(cacheEntry);
         }
         
         private IActionResult HandleCacheHit(string url, CacheEntry cacheEntry)
@@ -118,7 +117,7 @@ namespace MD.Home.Sharp.Controllers
             _logger.Information($"Request for {url} hit cache");
             
             Response.Headers.Add("X-Cache", "HIT");
-            Response.Headers.Add("Content-Length", cacheEntry.Size.ToString());
+            Response.Headers.Add("Content-Length", cacheEntry.Content.LongLength.ToString());
 
             return ReturnFile(cacheEntry);
         }

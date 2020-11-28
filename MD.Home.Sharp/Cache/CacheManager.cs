@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using MD.Home.Sharp.Configuration;
@@ -17,6 +18,7 @@ namespace MD.Home.Sharp.Cache
 
         private readonly Timer _insertionTimer;
         private readonly ConcurrentQueue<CacheEntry> _insertionQueue;
+        private readonly FileInfo _cacheFile;
 
         private bool _isDisposed;
 
@@ -24,37 +26,38 @@ namespace MD.Home.Sharp.Cache
         {
             _maxCacheSize = Convert.ToUInt64(clientSettings.MaxCacheSizeInMebibytes * 1024 * 1024);
             _insertionQueue = new ConcurrentQueue<CacheEntry>();
-            _cacheEntryDao = new CacheEntryDao(Constants.CacheFile, 100);
+            _cacheEntryDao = new CacheEntryDao(Constants.CacheFile);
             _memoryCache = new MemoryCache(new MemoryCacheOptions {SizeLimit = clientSettings.MaxPagesInMemory});
+            _cacheFile = new FileInfo(Constants.CacheFile);
 
             _insertionTimer = new Timer(InsertionTasks, null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
         }
 
-        public CacheEntry? GetEntry(Guid id)
+        public CacheEntry? GetCacheEntry(Guid cacheEntryId)
         {
             if (_isDisposed)
                 throw new ObjectDisposedException($"This instance of {nameof(CacheManager)} has been disposed.");
             
-            var entry = _memoryCache.Get<CacheEntry?>(id);
+            var cacheEntry = _memoryCache.Get<CacheEntry?>(cacheEntryId);
 
-            if (entry != null)
+            if (cacheEntry != null)
             {
-                entry.LastAccessed = DateTime.UtcNow;
+                cacheEntry.LastAccessed = DateTime.UtcNow;
 
-                return entry;
+                return cacheEntry;
             }
             
-            entry = _cacheEntryDao.GetEntryById(id);
+            cacheEntry = _cacheEntryDao.GetCacheEntryById(cacheEntryId);
 
-            if (entry == null)
+            if (cacheEntry == null)
                 return null;
             
-            InsertIntoMemory(entry);
+            InsertIntoMemory(cacheEntry);
 
-            return entry;
+            return cacheEntry;
         }
 
-        public void InsertEntry(CacheEntry cacheEntry)
+        public void InsertCacheEntry(CacheEntry cacheEntry)
         {
             if (_isDisposed)
                 throw new ObjectDisposedException($"This instance of {nameof(CacheManager)} has been disposed.");
@@ -85,9 +88,9 @@ namespace MD.Home.Sharp.Cache
             _cacheEntryDao.Dispose();
         }
 
-        private void InsertIntoMemory(CacheEntry entry)
+        private void InsertIntoMemory(CacheEntry cacheEntry)
         {
-            entry.LastAccessed = DateTime.UtcNow;
+            cacheEntry.LastAccessed = DateTime.UtcNow;
             
             var entryOptions = new MemoryCacheEntryOptions
             {
@@ -109,22 +112,22 @@ namespace MD.Home.Sharp.Cache
                 }
             };
             
-            _memoryCache.Set(entry.Id, entry, entryOptions);
+            _memoryCache.Set(cacheEntry.Id, cacheEntry, entryOptions);
         }
 
         private void ConsolidateDatabase()
         {
-            if (_cacheEntryDao.TotalSizeOfContents is var totalSizeOfContents && totalSizeOfContents > _maxCacheSize)
-                ReduceCacheBySize(Convert.ToUInt64(Math.Ceiling(_maxCacheSize / 100d)));
+            if (Convert.ToUInt64(_cacheFile.Length) > _maxCacheSize + _maxCacheSize / 100)
+                ReduceCacheBySize(Convert.ToUInt64(Math.Ceiling(_maxCacheSize / 100d * 5)));
 
             _cacheEntryDao.TriggerCheckpoint();
         }
         
         private void ReduceCacheBySize(ulong size)
         {
-            var averageSize = _cacheEntryDao.AverageSizeOfContents;
+            var averageSize = Convert.ToUInt64(_cacheFile.Length) / _cacheEntryDao.AmountOfCacheEntries;
 
-            _cacheEntryDao.DeleteLeastAccessedEntries(Convert.ToUInt32(Math.Ceiling(size / averageSize)));
+            _cacheEntryDao.DeleteLeastAccessedEntries(Convert.ToUInt64(Math.Ceiling(Convert.ToDouble(size / averageSize))));
         }
 
         private void InsertionTasks(object? state)
@@ -132,7 +135,7 @@ namespace MD.Home.Sharp.Cache
             try
             {
                 while (_insertionQueue.TryDequeue(out var entry))
-                    _cacheEntryDao.InsertEntry(entry);
+                    _cacheEntryDao.InsertCacheEntry(entry);
 
                 ConsolidateDatabase();
             }
