@@ -92,7 +92,7 @@ namespace MD.Home.Sharp.Cache
             
             _memoryCache.Compact(100);
             _memoryCache.Dispose();
-
+            
             ConsolidateDatabase();
             
             _cacheEntryDao.Dispose();
@@ -143,15 +143,13 @@ namespace MD.Home.Sharp.Cache
 
         private void InsertionTasks(object? state)
         {
-            if (_isDisposed)
-                return;;
-
             try
             {
                 while (_insertionQueue.TryDequeue(out var entry))
                     _cacheEntryDao.InsertCacheEntry(entry);
 
-                ConsolidateDatabase();
+                if (!_isDisposed)
+                    ConsolidateDatabase();
             }
             catch
             {

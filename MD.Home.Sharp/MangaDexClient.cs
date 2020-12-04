@@ -48,7 +48,7 @@ namespace MD.Home.Sharp
             if (_isDisposed)
                 throw new ObjectDisposedException($"This instance of {nameof(MangaDexClient)} has been disposed.");
             
-            Log.Logger.Debug("Connecting to the control server");
+            Log.Logger.Information("Connecting to the control server");
 
             var message = JsonSerializer.Serialize(GetPingParameters(), _serializerOptions);
             var response = await Program.HttpClient.PostAsync($"{Constants.ServerAddress}ping", new StringContent(message, Encoding.UTF8, "application/json"));
