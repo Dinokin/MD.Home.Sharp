@@ -25,7 +25,6 @@ namespace MD.Home.Sharp
             }
         }
 
-        private readonly ILogger _logger;
         private readonly ClientSettings _clientSettings;
         private readonly JsonSerializerOptions _serializerOptions;
         
@@ -36,9 +35,8 @@ namespace MD.Home.Sharp
 
         private bool _isDisposed;
 
-        public MangaDexClient(ILogger logger, ClientSettings clientSettings, JsonSerializerOptions serializerOptions)
+        public MangaDexClient(ClientSettings clientSettings, JsonSerializerOptions serializerOptions)
         {
-            _logger = logger;
             _clientSettings = clientSettings;
             _serializerOptions = serializerOptions;
 
@@ -50,7 +48,7 @@ namespace MD.Home.Sharp
             if (_isDisposed)
                 throw new ObjectDisposedException($"This instance of {nameof(MangaDexClient)} has been disposed.");
             
-            _logger.Information("Connecting to the control server");
+            Log.Logger.Information("Connecting to the control server");
 
             var message = JsonSerializer.Serialize(GetPingParameters(), _serializerOptions);
             var response = await Program.HttpClient.PostAsync($"{Constants.ServerAddress}ping", new StringContent(message, Encoding.UTF8, "application/json"));
@@ -61,7 +59,7 @@ namespace MD.Home.Sharp
                 _isLoggedIn = true;
                 
                 if (_remoteSettings?.LatestBuild > Constants.ClientBuild)
-                    _logger.Warning($"Outdated build detected! Latest: {_remoteSettings.LatestBuild}, Current: {Constants.ClientBuild}");
+                    Log.Logger.Warning($"Outdated build detected! Latest: {_remoteSettings.LatestBuild}, Current: {Constants.ClientBuild}");
             }
             else
                 throw new AuthenticationException();
@@ -72,7 +70,7 @@ namespace MD.Home.Sharp
             if (_isDisposed)
                 throw new ObjectDisposedException($"This instance of {nameof(MangaDexClient)} has been disposed.");
             
-            _logger.Information("Disconnecting from the control server");
+            Log.Logger.Information("Disconnecting from the control server");
 
             var message = JsonSerializer.Serialize(new Dictionary<string, object> { {"secret", _clientSettings.ClientSecret} }, _serializerOptions);
             var response = await Program.HttpClient.PostAsync($"{Constants.ServerAddress}stop", new StringContent(message, Encoding.UTF8, "application/json"));
@@ -103,7 +101,7 @@ namespace MD.Home.Sharp
             if (_remoteSettings == null || !_isLoggedIn || _isDisposed)
                 return;
 
-            _logger.Information("Pinging the control server");
+            Log.Logger.Information("Pinging the control server");
             
             var message = JsonSerializer.Serialize(GetPingParameters(), _serializerOptions);
             HttpResponseMessage response;
@@ -114,7 +112,7 @@ namespace MD.Home.Sharp
             }
             catch
             {
-                _logger.Error("Failed to ping control due to unknown reasons");
+                Log.Logger.Error("Failed to ping control due to unknown reasons");
 
                 return;
             }
@@ -123,14 +121,14 @@ namespace MD.Home.Sharp
             {
                 var remoteSettings = JsonSerializer.Deserialize<RemoteSettings>(await response.Content.ReadAsStringAsync(), _serializerOptions);
                 
-                _logger.Information($"Server settings received: {remoteSettings}");
+                Log.Logger.Information($"Server settings received: {remoteSettings}");
 
                 if (remoteSettings?.LatestBuild > Constants.ClientBuild)
-                    _logger.Warning($"Outdated build detected! Latest: {remoteSettings.LatestBuild}, Current: {Constants.ClientBuild}");
+                    Log.Logger.Warning($"Outdated build detected! Latest: {remoteSettings.LatestBuild}, Current: {Constants.ClientBuild}");
 
                 if (remoteSettings?.TlsCertificate != null)
                 {
-                    _logger.Information("Restarting ImageServer to refresh certificates");
+                    Log.Logger.Warning("Restarting ImageServer to refresh certificates");
                     _remoteSettings = remoteSettings;
                     
                     Program.Restart();
@@ -142,7 +140,7 @@ namespace MD.Home.Sharp
                 }
             }
             else
-                _logger.Information("Server ping failed - ignoring");
+                Log.Logger.Warning("Ping to control failed");
         }
 
         private Dictionary<string, object> GetPingParameters()

@@ -13,16 +13,11 @@ using Sodium;
 namespace MD.Home.Sharp.Filters
 {
     [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
-    internal class TokenValidator : IActionFilter
+    internal sealed class TokenValidator : IActionFilter
     {
-        private readonly ILogger _logger;
         private readonly JsonSerializerOptions _serializerOptions;
 
-        public TokenValidator(ILogger logger, JsonSerializerOptions serializerOptions)
-        {
-            _logger = logger;
-            _serializerOptions = serializerOptions;
-        }
+        public TokenValidator(JsonSerializerOptions serializerOptions) => _serializerOptions = serializerOptions;
 
         [SuppressMessage("ReSharper", "InvertIf")]
         [SuppressMessage("ReSharper", "RedundantJumpStatement")]
@@ -40,7 +35,7 @@ namespace MD.Home.Sharp.Filters
                 case 0 when !Program.MangaDexClient.RemoteSettings.ForceTokens:
                     return;
                 case < 24:
-                    _logger.Information($"Request for {path} rejected for invalid token");
+                    Log.Logger.Warning($"Request for {path} rejected for invalid token");
 
                     context.Result = new StatusCodeResult(403);
                 
@@ -56,7 +51,7 @@ namespace MD.Home.Sharp.Filters
             }
             catch
             {
-                _logger.Information($"Request for {path} rejected for invalid token");
+                Log.Logger.Warning($"Request for {path} rejected for invalid token");
 
                 context.Result = new StatusCodeResult(403);
                 
@@ -65,7 +60,7 @@ namespace MD.Home.Sharp.Filters
 
             if (serializedToken == null)
             {
-                _logger.Information($"Request for {path} rejected for invalid token");
+                Log.Logger.Warning($"Request for {path} rejected for invalid token");
 
                 context.Result = new StatusCodeResult(403);
                 
@@ -74,7 +69,7 @@ namespace MD.Home.Sharp.Filters
 
             if (DateTimeOffset.UtcNow > serializedToken.ExpirationDate)
             {
-                _logger.Information($"Request for {path} rejected for expired token");
+                Log.Logger.Warning($"Request for {path} rejected for expired token");
 
                 context.Result = new StatusCodeResult(410);
                 
@@ -83,7 +78,7 @@ namespace MD.Home.Sharp.Filters
             
             if (context.ActionArguments.TryGetValue("chapterId", out var chapterId) && serializedToken.Hash != ((Guid) chapterId).ToString("N"))
             {
-                _logger.Information($"Request for {path} rejected for inapplicable token");
+                Log.Logger.Warning($"Request for {path} rejected for inapplicable token");
 
                 context.Result = new StatusCodeResult(410);
                 

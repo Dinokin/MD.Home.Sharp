@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using MD.Home.Sharp.Configuration;
+using MD.Home.Sharp.Extensions;
 using MD.Home.Sharp.Others;
 using Microsoft.Extensions.Caching.Memory;
 
@@ -12,42 +13,42 @@ namespace MD.Home.Sharp.Cache
     public class CacheManager : IDisposable
     {
         private readonly ulong _maxCacheSize;
-
+        private readonly FileInfo _cacheFile;
         private readonly CacheEntryDao _cacheEntryDao;
         private readonly MemoryCache _memoryCache;
 
-        private readonly Timer _insertionTimer;
         private readonly ConcurrentQueue<CacheEntry> _insertionQueue;
-        private readonly FileInfo _cacheFile;
+        private readonly Timer _insertionTimer;
 
         private bool _isDisposed;
 
         public CacheManager(ClientSettings clientSettings)
         {
             _maxCacheSize = Convert.ToUInt64(clientSettings.MaxCacheSizeInMebibytes * 1024 * 1024);
-            _insertionQueue = new ConcurrentQueue<CacheEntry>();
-            _cacheEntryDao = new CacheEntryDao(Constants.CacheFile);
-            _memoryCache = new MemoryCache(new MemoryCacheOptions {SizeLimit = clientSettings.MaxPagesInMemory});
             _cacheFile = new FileInfo(Constants.CacheFile);
-
+            _cacheEntryDao = new CacheEntryDao(_cacheFile);
+            _memoryCache = new MemoryCache(new MemoryCacheOptions {SizeLimit = clientSettings.MaxPagesInMemory});
+            
+            _insertionQueue = new ConcurrentQueue<CacheEntry>();
             _insertionTimer = new Timer(InsertionTasks, null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
         }
 
-        public CacheEntry? GetCacheEntry(Guid cacheEntryId)
+        public CacheEntry? GetCacheEntry(string url)
         {
             if (_isDisposed)
                 throw new ObjectDisposedException($"This instance of {nameof(CacheManager)} has been disposed.");
-            
-            var cacheEntry = _memoryCache.Get<CacheEntry?>(cacheEntryId);
+
+            var hash = url.GetMd5Hash();
+            var cacheEntry = _memoryCache.Get<CacheEntry?>(hash);
 
             if (cacheEntry != null)
             {
-                cacheEntry.LastAccessed = DateTime.UtcNow;
+                cacheEntry.LastAccessed = DateTimeOffset.UtcNow;
 
                 return cacheEntry;
             }
             
-            cacheEntry = _cacheEntryDao.GetCacheEntryById(cacheEntryId);
+            cacheEntry = _cacheEntryDao.GetCacheEntryByHash(hash);
 
             if (cacheEntry == null)
                 return null;
@@ -57,13 +58,24 @@ namespace MD.Home.Sharp.Cache
             return cacheEntry;
         }
 
-        public void InsertCacheEntry(CacheEntry cacheEntry)
+        public CacheEntry InsertCacheEntry(string url, string contentType, DateTimeOffset lastModified, byte[] content)
         {
             if (_isDisposed)
                 throw new ObjectDisposedException($"This instance of {nameof(CacheManager)} has been disposed.");
+
+            var entry = new CacheEntry
+            {
+                Hash = url.GetMd5Hash(),
+                ContentType = contentType,
+                LastModified = lastModified,
+                LastAccessed = DateTimeOffset.UtcNow,
+                Content = content
+            };
             
-            InsertIntoMemory(cacheEntry);
-            _insertionQueue.Enqueue(cacheEntry);
+            InsertIntoMemory(entry);
+            _insertionQueue.Enqueue(entry);
+
+            return entry;
         }
 
         public void Dispose()
@@ -90,8 +102,8 @@ namespace MD.Home.Sharp.Cache
 
         private void InsertIntoMemory(CacheEntry cacheEntry)
         {
-            cacheEntry.LastAccessed = DateTime.UtcNow;
-            
+            cacheEntry.LastAccessed = DateTimeOffset.UtcNow;
+
             var entryOptions = new MemoryCacheEntryOptions
             {
                 Size = 1,
@@ -104,7 +116,7 @@ namespace MD.Home.Sharp.Cache
             {
                 try
                 {
-                    _cacheEntryDao.UpdateEntryLastAccessDate((Guid) key, ((CacheEntry) value).LastAccessed);
+                    _cacheEntryDao.UpdateEntryLastAccessDate((string) key, ((CacheEntry) value).LastAccessed);
                 }
                 catch
                 {
@@ -112,7 +124,7 @@ namespace MD.Home.Sharp.Cache
                 }
             };
             
-            _memoryCache.Set(cacheEntry.Id, cacheEntry, entryOptions);
+            _memoryCache.Set(cacheEntry.Hash, cacheEntry, entryOptions);
         }
 
         private void ConsolidateDatabase()

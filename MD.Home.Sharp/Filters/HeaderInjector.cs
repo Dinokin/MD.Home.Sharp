@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 namespace MD.Home.Sharp.Filters
 {
     [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
-    internal class HeaderInjector : IResultFilter
+    internal sealed class HeaderInjector : IResultFilter
     {
         public void OnResultExecuting(ResultExecutingContext context)
         {
@@ -21,7 +21,7 @@ namespace MD.Home.Sharp.Filters
             context.HttpContext.Response.Headers.Add("X-Content-Type-Options", "nosniff");
             context.HttpContext.Response.Headers.Add("X-Time-Taken", timeTaken.ToString(CultureInfo.InvariantCulture));
             context.HttpContext.Response.Headers.Add("Server", $"MD.Home.Sharp 1.0.0 {Constants.ClientBuild}");
-            context.HttpContext.Response.Headers.Add("Date", DateTime.UtcNow.ToString("R"));
+            context.HttpContext.Response.Headers.Add("Date", DateTimeOffset.UtcNow.ToString("O"));
         }
 
         public void OnResultExecuted(ResultExecutedContext context) { }

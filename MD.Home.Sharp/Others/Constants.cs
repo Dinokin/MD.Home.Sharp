@@ -5,7 +5,6 @@ namespace MD.Home.Sharp.Others
     internal static class Constants
     {
         public const string ServerAddress = "https://api.mangadex.network/";
-        public const string SettingsFile = "settings.json";
         public const string CacheFile = "cache.db";
         public const ushort ClientBuild = 19;
 

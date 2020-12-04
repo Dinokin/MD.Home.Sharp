@@ -8,12 +8,8 @@ using Serilog;
 namespace MD.Home.Sharp.Filters
 {
     [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
-    internal class ReferrerValidator : IActionFilter
+    internal sealed class ReferrerValidator : IActionFilter
     {
-        private readonly ILogger _logger;
-
-        public ReferrerValidator(ILogger logger) => _logger = logger;
-        
         [SuppressMessage("ReSharper", "InvertIf")]
         [SuppressMessage("ReSharper", "RedundantJumpStatement")]
         public void OnActionExecuting(ActionExecutingContext context)
@@ -23,7 +19,7 @@ namespace MD.Home.Sharp.Filters
 
             if (context.HttpContext.Request.Headers.TryGetValue("Referer", out var referer) && !referer.Any(str => allowedReferrers.Any(str.Contains)))
             {
-                _logger.Information($"Request for {path} rejected due to non-allowed referrer ${string.Join(',', context.HttpContext.Request.Headers["Referer"])}");
+                Log.Logger.Warning($"Request for {path} rejected due to non-allowed referrer ${string.Join(',', context.HttpContext.Request.Headers["Referer"])}");
                 
                 context.Result = new StatusCodeResult(403);
                 

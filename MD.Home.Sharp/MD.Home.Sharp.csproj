@@ -15,6 +15,12 @@
     </PropertyGroup>
     
     <ItemGroup>
+        <PackageReference Include="Microsoft.Data.Sqlite" Version="5.0.0" />
+        <PackageReference Include="Serilog.AspNetCore" Version="3.4.0" />
+        <PackageReference Include="Sodium.Core" Version="1.2.3" />
+    </ItemGroup>
+
+    <ItemGroup>
         <EmbeddedResource Update="Cache\Queries.resx">
             <Generator>ResXFileCodeGenerator</Generator>
             <LastGenOutput>Queries.Designer.cs</LastGenOutput>
@@ -24,12 +30,6 @@
             <AutoGen>True</AutoGen>
             <DependentUpon>Queries.resx</DependentUpon>
         </Compile>
-    </ItemGroup>
-    
-    <ItemGroup>
-        <PackageReference Include="Microsoft.Data.Sqlite" Version="5.0.0" />
-        <PackageReference Include="Serilog.AspNetCore" Version="3.4.0" />
-        <PackageReference Include="Sodium.Core" Version="1.2.3" />
     </ItemGroup>
     
     <ItemGroup>

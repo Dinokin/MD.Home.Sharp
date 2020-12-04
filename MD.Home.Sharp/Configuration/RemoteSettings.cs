@@ -15,7 +15,7 @@ namespace MD.Home.Sharp.Configuration
         
         public string ImageServer { get; }
         
-        [JsonConverter(typeof(Base64BytesDecoder))]
+        [JsonConverter(typeof(Base64StringDecoder))]
         public byte[] TokenKey { get; }
         
         [JsonPropertyName("compromised")]

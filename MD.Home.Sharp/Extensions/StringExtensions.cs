@@ -19,16 +19,16 @@ namespace MD.Home.Sharp.Extensions
             return source.Contains("/data") ? source.Substring(source.IndexOf("/data", StringComparison.InvariantCulture)) : source;
         }
         
-        public static Guid GetMd5HashAsGuid(this string source)
+        public static string GetMd5Hash(this string source)
         {
             using var hasher = MD5.Create();
             var hashBytes = hasher.ComputeHash(Encoding.UTF8.GetBytes(source));
             var sb = new StringBuilder();
             
             foreach (var b in hashBytes)
-                sb.Append(b.ToString("X2"));
-            
-            return Guid.Parse(sb.ToString().ToLowerInvariant());
+                sb.Append(b.ToString("X"));
+
+            return sb.ToString();
         }
     }
 }

@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
-using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -31,9 +30,7 @@ namespace MD.Home.Sharp
         public static readonly MangaDexClient MangaDexClient;
         public static readonly HttpClient HttpClient;
         
-        private static readonly IConfiguration? Configuration;
-        private static readonly ILogger Logger;
-
+        private static readonly IConfiguration Configuration;
         private static readonly ClientSettings ClientSettings;
         private static readonly JsonSerializerOptions SerializerOptions;
 
@@ -46,28 +43,33 @@ namespace MD.Home.Sharp
 
             ClientSettings = new ClientSettings();
             SerializerOptions = new JsonSerializerOptions {PropertyNamingPolicy = namingPolicy, DictionaryKeyPolicy = namingPolicy};
-            Configuration = new ConfigurationBuilder().AddJsonFile(Constants.SettingsFile, false).Build();
-            Configuration.Bind(ClientSettings);
-            HttpClient = new HttpClient(GetHttpClientHandler());
-
-            ValidateSettings();
             
-            Logger = new LoggerConfiguration()
+            Configuration = new ConfigurationBuilder().AddJsonFile("settings.json", false).Build();
+            Configuration.Bind(ClientSettings);
+            ValidateSettings();
+
+            Log.Logger = new LoggerConfiguration()
+                .Enrich.FromLogContext()
                 .MinimumLevel.Information()
+                .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+                .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+                .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Warning)
                 .MinimumLevel.Override("System.Net.Http.HttpClient", LogEventLevel.Warning)
                 .WriteTo.Console()
                 .CreateLogger();
+            
+            HttpClient = new HttpClient(GetHttpClientHandler());
 
             Console.CancelKeyPress += (_, _) => _stopRequested = true;
 
-            MangaDexClient = new MangaDexClient(Logger, ClientSettings, SerializerOptions);
+            MangaDexClient = new MangaDexClient(ClientSettings, SerializerOptions);
         }
 
         public static async Task Main()
         {
             await MangaDexClient.LoginToControl();
             
-            Logger.Information("Starting image server");
+            Log.Logger.Information("Starting image server");
             
             var host = GetImageServer();
             await host.StartAsync();
@@ -90,14 +92,12 @@ namespace MD.Home.Sharp
 
             await MangaDexClient.LogoutFromControl();
 
-            Logger.Information("Gracefully stopping image server");
+            Log.Logger.Information("Gracefully stopping image server");
             
             await Task.Delay(TimeSpan.FromSeconds(ClientSettings.GracefulShutdownWaitSeconds));
             await host.StopAsync();
             
             host.Dispose();
-            MangaDexClient.Dispose();
-            HttpClient.Dispose();
         }
         
         public static void Restart() => _restartRequested = true;
@@ -141,7 +141,7 @@ namespace MD.Home.Sharp
                         using var certificate = new X509Certificate2(Security.GetCertificateBytesFromBase64(MangaDexClient.RemoteSettings.TlsCertificate!.Certificate, Security.InputType.Certificate));
                         using var provider = new RSACryptoServiceProvider();
 
-                        provider.ImportRSAPrivateKey(MemoryMarshal.AsBytes(Security.GetCertificateBytesFromBase64(MangaDexClient.RemoteSettings.TlsCertificate.PrivateKey, Security.InputType.PrivateKey).AsSpan()), out _);
+                        provider.ImportRSAPrivateKey(Security.GetCertificateBytesFromBase64(MangaDexClient.RemoteSettings.TlsCertificate!.PrivateKey, Security.InputType.PrivateKey), out _);
 
                         if (!string.IsNullOrWhiteSpace(ClientSettings.ClientHostname))
                             options.Listen(IPAddress.Parse(ClientSettings.ClientHostname), ClientSettings.ClientPort,

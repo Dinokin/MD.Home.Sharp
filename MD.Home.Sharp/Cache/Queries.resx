@@ -27,24 +27,24 @@
         <value>PRAGMA cache_size=0;</value>
     </data>
     <data name="CreateDatabase" xml:space="preserve">
-        <value>CREATE TABLE cache_entries (id CHARACTER(32) PRIMARY KEY, content_type VARCHAR(20) NOT NULL, last_modified DATETIME NOT NULL, last_accessed DATETIME NOT NULL, content BLOB NOT NULL);</value>>
+        <value>BEGIN; CREATE TABLE cache_entries (hash CHARACTER(32) PRIMARY KEY, content_type VARCHAR(20) NOT NULL, last_modified DATETIME NOT NULL, last_accessed DATETIME NOT NULL, content BLOB NOT NULL); CREATE INDEX last_accessed_index ON cache_entries (last_accessed); COMMIT;</value>>
     </data>
     <data name="TriggerCheckpoint" xml:space="preserve">
         <value>PRAGMA wal_checkpoint(TRUNCATE);</value>
     </data>
-    <data name="GetCacheEntryById" xml:space="preserve">
-        <value>SELECT id, content_type, last_modified, content FROM cache_entries WHERE id = $id;</value>
+    <data name="GetCacheEntryByHash" xml:space="preserve">
+        <value>SELECT hash, content_type, last_modified, content FROM cache_entries WHERE hash = $hash;</value>
     </data>
     <data name="InsertCacheEntry" xml:space="preserve">
-        <value>INSERT INTO cache_entries (id, content_type, last_modified, last_accessed, content) VALUES ($id, $content_type, $last_modified, $last_accessed, $content);</value>
+        <value>INSERT INTO cache_entries (hash, content_type, last_modified, last_accessed, content) VALUES ($hash, $content_type, $last_modified, $last_accessed, $content);</value>
     </data>
     <data name="UpdateCacheEntryLastAccessDate" xml:space="preserve">
-        <value>UPDATE cache_entries SET last_accessed = $last_accessed WHERE id = $id;</value>
+        <value>UPDATE cache_entries SET last_accessed = $last_accessed WHERE hash = $hash;</value>
     </data>
     <data name="DeleteLeastAccessedCacheEntries" xml:space="preserve">
-        <value>DELETE FROM cache_entries WHERE id IN (SELECT id FROM cache_entries ORDER BY last_accessed LIMIT $amount);</value>
+        <value>DELETE FROM cache_entries WHERE hash IN (SELECT hash FROM cache_entries ORDER BY last_accessed LIMIT $amount);</value>
     </data>
     <data name="AmountOfCacheEntries" xml:space="preserve">
-        <value>SELECT COUNT(*) FROM cache_entries;</value>
+        <value>SELECT COUNT(ROWID) FROM cache_entries;</value>
     </data>
 </root>

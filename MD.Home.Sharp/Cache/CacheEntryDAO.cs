@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data;
+using System.IO;
 using MD.Home.Sharp.Extensions;
 using Microsoft.Data.Sqlite;
 
@@ -25,26 +26,28 @@ namespace MD.Home.Sharp.Cache
 
         private bool _isDisposed;
 
-        public CacheEntryDao(string dataSource)
+        public CacheEntryDao(FileInfo dataSource)
         {
             var connectionStringBuilder = new SqliteConnectionStringBuilder
             {
-                DataSource = dataSource,
+                DataSource = dataSource.FullName,
                 Mode = SqliteOpenMode.ReadWriteCreate,
                 Cache = SqliteCacheMode.Shared
             };
 
             _connectionPool = new ConnectionPool(connectionStringBuilder.ToString());
-            CreateDatabase();
+
+            if (!dataSource.Exists)
+                CreateDatabase();
         }
 
-        public CacheEntry? GetCacheEntryById(Guid cacheEntryId)
+        public CacheEntry? GetCacheEntryByHash(string hash)
         {
             if (_isDisposed)
                 throw new ObjectDisposedException($"This instance of {nameof(CacheEntryDao)} has been disposed.");
             
-            using var command = new SqliteCommand(Queries.GetCacheEntryById);
-            command.Parameters.Add(new SqliteParameter("$id", cacheEntryId.ToString("N")));
+            using var command = new SqliteCommand(Queries.GetCacheEntryByHash);
+            command.Parameters.Add(new SqliteParameter("$hash", hash));
 
             using var reader = ExecuteQueryWithResult(command, CommandBehavior.SingleResult);
 
@@ -53,7 +56,7 @@ namespace MD.Home.Sharp.Cache
             if (reader.Read())
                 cacheEntry = new CacheEntry
                 {
-                    Id = reader.GetGuid("id"),
+                    Hash = reader.GetString("hash"),
                     ContentType = reader.GetString("content_type"),
                     LastModified = reader.GetDateTime("last_modified"),
                     Content = reader.GetStream("content").GetBytes()
@@ -71,17 +74,17 @@ namespace MD.Home.Sharp.Cache
             
             command.Parameters.AddRange(new []
             {
-                new SqliteParameter("$id", cacheEntry.Id.ToString("N")),
+                new SqliteParameter("$hash", cacheEntry.Hash),
                 new SqliteParameter("$content_type", cacheEntry.ContentType),
-                new SqliteParameter("$last_accessed", cacheEntry.LastAccessed),
                 new SqliteParameter("$last_modified", cacheEntry.LastModified),
+                new SqliteParameter("$last_accessed", cacheEntry.LastAccessed),
                 new SqliteParameter("$content", cacheEntry.Content)
             });
             
             ExecuteQueryWithoutResult(command);
         }
 
-        public void UpdateEntryLastAccessDate(Guid id, DateTime date)
+        public void UpdateEntryLastAccessDate(string hash, DateTimeOffset date)
         {
             if (_isDisposed)
                 throw new ObjectDisposedException($"This instance of {nameof(CacheEntryDao)} has been disposed.");
@@ -90,7 +93,7 @@ namespace MD.Home.Sharp.Cache
             
             command.Parameters.AddRange(new []
             {
-                new SqliteParameter("$id", id.ToString("N")),
+                new SqliteParameter("$hash", hash),
                 new SqliteParameter("$last_accessed", date),
             });
             
@@ -136,22 +139,15 @@ namespace MD.Home.Sharp.Cache
         
         private void CreateDatabase()
         {
-            try
-            {
-                using var command1 = new SqliteCommand(Queries.SetJournalMode);
-                using var command2 = new SqliteCommand(Queries.DisableAutocheckpoint);
-                using var command3 = new SqliteCommand(Queries.SetCacheSize);
-                using var command4 = new SqliteCommand(Queries.CreateDatabase);
+            using var command1 = new SqliteCommand(Queries.SetJournalMode);
+            using var command2 = new SqliteCommand(Queries.DisableAutocheckpoint);
+            using var command3 = new SqliteCommand(Queries.SetCacheSize);
+            using var command4 = new SqliteCommand(Queries.CreateDatabase);
 
-                ExecuteQueryWithoutResult(command1);
-                ExecuteQueryWithoutResult(command2);
-                ExecuteQueryWithoutResult(command3);
-                ExecuteQueryWithoutResult(command4);
-            }
-            catch
-            {
-                // Ignore
-            }
+            ExecuteQueryWithoutResult(command1);
+            ExecuteQueryWithoutResult(command2);
+            ExecuteQueryWithoutResult(command3);
+            ExecuteQueryWithoutResult(command4);
         }
 
         private void ExecuteQueryWithoutResult(SqliteCommand command)

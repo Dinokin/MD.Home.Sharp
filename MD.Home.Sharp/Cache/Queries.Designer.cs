@@ -61,7 +61,7 @@ namespace MD.Home.Sharp.Cache {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to SELECT COUNT(*) FROM cache_entries;.
+        ///   Looks up a localized string similar to SELECT COUNT(ROWID) FROM cache_entries;.
         /// </summary>
         internal static string AmountOfCacheEntries {
             get {
@@ -79,7 +79,7 @@ namespace MD.Home.Sharp.Cache {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to DELETE FROM cache_entries WHERE id IN (SELECT id FROM cache_entries ORDER BY last_accessed LIMIT $amount);.
+        ///   Looks up a localized string similar to DELETE FROM cache_entries WHERE hash IN (SELECT hash FROM cache_entries ORDER BY last_accessed LIMIT $amount);.
         /// </summary>
         internal static string DeleteLeastAccessedCacheEntries {
             get {
@@ -97,16 +97,16 @@ namespace MD.Home.Sharp.Cache {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to SELECT id, content_type, last_modified, content FROM cache_entries WHERE id = $id;.
+        ///   Looks up a localized string similar to SELECT hash, content_type, last_modified, content FROM cache_entries WHERE hash = $hash;.
         /// </summary>
-        internal static string GetCacheEntryById {
+        internal static string GetCacheEntryByHash {
             get {
-                return ResourceManager.GetString("GetCacheEntryById", resourceCulture);
+                return ResourceManager.GetString("GetCacheEntryByHash", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to INSERT INTO cache_entries (id, content_type, last_modified, last_accessed, content) VALUES ($id, $content_type, $last_modified, $last_accessed, $content);.
+        ///   Looks up a localized string similar to INSERT INTO cache_entries (hash, content_type, last_modified, last_accessed, content) VALUES ($hash, $content_type, $last_modified, $last_accessed, $content);.
         /// </summary>
         internal static string InsertCacheEntry {
             get {
@@ -142,7 +142,7 @@ namespace MD.Home.Sharp.Cache {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to UPDATE cache_entries SET last_accessed = $last_accessed WHERE id = $id;.
+        ///   Looks up a localized string similar to UPDATE cache_entries SET last_accessed = $last_accessed WHERE hash = $hash;.
         /// </summary>
         internal static string UpdateCacheEntryLastAccessDate {
             get {

@@ -12,16 +12,11 @@ namespace MD.Home.Sharp.Controllers
 {
     [Route("")]
     [ResponseCache(Duration = 1209600)]
-    public class MainController : Controller
+    public sealed class MainController : Controller
     {
         private readonly CacheManager _cacheManager;
-        private readonly ILogger _logger;
 
-        public MainController(CacheManager cacheManager, ILogger logger)
-        {
-            _cacheManager = cacheManager;
-            _logger = logger;
-        }
+        public MainController(CacheManager cacheManager) => _cacheManager = cacheManager;
 
         [HttpGet("data/{chapterId:guid}/{name}")]
         public async Task<IActionResult> FetchNormalImage(Guid chapterId, string name) => await FetchImage(false, chapterId, name);
@@ -41,14 +36,14 @@ namespace MD.Home.Sharp.Controllers
         {
             var url = $"/{(dataSaver ? "data-saver" : "data")}/{chapterId:N}/{name}";
             
-            var cacheEntry = _cacheManager.GetCacheEntry(url.GetMd5HashAsGuid());
+            var cacheEntry = _cacheManager.GetCacheEntry(url);
 
             return cacheEntry == null ? await HandleCacheMiss(url) : HandleCacheHit(url, cacheEntry);
         }
 
         private async Task<IActionResult> HandleCacheMiss(string url)
         {
-            _logger.Information($"Request for {url} missed cache");
+            Log.Logger.Information($"Request for {url} missed cache");
 
             HttpResponseMessage response;
 
@@ -58,14 +53,14 @@ namespace MD.Home.Sharp.Controllers
             }
             catch
             {
-                _logger.Error($"Upstream query for {url} failed without status");
+                Log.Logger.Error($"Upstream query for {url} failed without status");
                 
                 return StatusCode(500);
             }
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.Information($"Upstream query for {url} errored with status {(int) response.StatusCode}");
+                Log.Logger.Warning($"Upstream query for {url} errored with status {(int) response.StatusCode}");
 
                 return StatusCode((int) response.StatusCode);
             }
@@ -77,31 +72,22 @@ namespace MD.Home.Sharp.Controllers
 
             if (content.Length == 0)
             {
-                _logger.Warning($"Upstream query for {url} returned empty content");
+                Log.Logger.Warning($"Upstream query for {url} returned empty content");
 
                 return StatusCode(500);
             }
             
             if (!contentType.IsImageMimeType())
             {
-                _logger.Warning($"Upstream query for {url} returned bad mimetype {contentType}");
+                Log.Logger.Warning($"Upstream query for {url} returned bad mimetype {contentType}");
 
                 return StatusCode(500);
             }
 
-            _logger.Information($"Upstream query for {url} succeeded");
+            Log.Logger.Information($"Upstream query for {url} succeeded");
 
-            var cacheEntry = new CacheEntry
-            {
-                Id = url.GetMd5HashAsGuid(),
-                ContentType = contentType!,
-                LastModified = lastModified.GetValueOrDefault(DateTimeOffset.UtcNow).UtcDateTime,
-                LastAccessed = DateTime.UtcNow,
-                Content = content
-            };
-
-            _cacheManager.InsertCacheEntry(cacheEntry);
-
+            var cacheEntry = _cacheManager.InsertCacheEntry(url, contentType!, lastModified.GetValueOrDefault(DateTimeOffset.UtcNow), content);
+            
             if (contentLength != null)
                 Response.Headers.Add("Content-Length", contentLength.ToString());
             else
@@ -114,7 +100,7 @@ namespace MD.Home.Sharp.Controllers
         
         private IActionResult HandleCacheHit(string url, CacheEntry cacheEntry)
         {
-            _logger.Information($"Request for {url} hit cache");
+            Log.Logger.Information($"Request for {url} hit cache");
             
             Response.Headers.Add("X-Cache", "HIT");
             Response.Headers.Add("Content-Length", cacheEntry.Content.LongLength.ToString());
