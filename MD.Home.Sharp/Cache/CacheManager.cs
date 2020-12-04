@@ -88,8 +88,6 @@ namespace MD.Home.Sharp.Cache
                 _isDisposed = true;
             }
             
-            GC.SuppressFinalize(this);
-            
             _insertionTimer.Dispose();
             
             _memoryCache.Compact(100);
@@ -98,6 +96,7 @@ namespace MD.Home.Sharp.Cache
             ConsolidateDatabase();
             
             _cacheEntryDao.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         private void InsertIntoMemory(CacheEntry cacheEntry)
@@ -144,6 +143,9 @@ namespace MD.Home.Sharp.Cache
 
         private void InsertionTasks(object? state)
         {
+            if (_isDisposed)
+                return;;
+
             try
             {
                 while (_insertionQueue.TryDequeue(out var entry))

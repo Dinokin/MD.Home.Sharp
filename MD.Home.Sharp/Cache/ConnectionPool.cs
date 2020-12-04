@@ -43,11 +43,11 @@ namespace MD.Home.Sharp.Cache
                 
                 _isDisposed = true;
             }
-
-            GC.SuppressFinalize(this);
-
+            
             while (_pool.TryDequeue(out var connection))
                 DestroyConnection(connection);
+            
+            GC.SuppressFinalize(this);
         }
 
         private SqliteConnection BuildConnection()

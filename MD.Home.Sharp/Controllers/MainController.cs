@@ -43,7 +43,7 @@ namespace MD.Home.Sharp.Controllers
 
         private async Task<IActionResult> HandleCacheMiss(string url)
         {
-            Log.Logger.Information($"Request for {url} missed cache");
+            Log.Logger.Debug($"Request for {url} missed cache");
 
             HttpResponseMessage response;
 
@@ -84,7 +84,7 @@ namespace MD.Home.Sharp.Controllers
                 return StatusCode(500);
             }
 
-            Log.Logger.Information($"Upstream query for {url} succeeded");
+            Log.Logger.Debug($"Upstream query for {url} succeeded");
 
             var cacheEntry = _cacheManager.InsertCacheEntry(url, contentType!, lastModified.GetValueOrDefault(DateTimeOffset.UtcNow), content);
             
@@ -100,7 +100,7 @@ namespace MD.Home.Sharp.Controllers
         
         private IActionResult HandleCacheHit(string url, CacheEntry cacheEntry)
         {
-            Log.Logger.Information($"Request for {url} hit cache");
+            Log.Logger.Debug($"Request for {url} hit cache");
             
             Response.Headers.Add("X-Cache", "HIT");
             Response.Headers.Add("Content-Length", cacheEntry.Content.LongLength.ToString());

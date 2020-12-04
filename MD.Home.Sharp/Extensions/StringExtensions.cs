@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -23,12 +24,8 @@ namespace MD.Home.Sharp.Extensions
         {
             using var hasher = MD5.Create();
             var hashBytes = hasher.ComputeHash(Encoding.UTF8.GetBytes(source));
-            var sb = new StringBuilder();
-            
-            foreach (var b in hashBytes)
-                sb.Append(b.ToString("X"));
 
-            return sb.ToString();
+            return new string(hashBytes.SelectMany(b => b.ToString("X2")).ToArray());
         }
     }
 }
