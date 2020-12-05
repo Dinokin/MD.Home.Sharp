@@ -2,9 +2,11 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading.Tasks;
 using MD.Home.Sharp.Cache;
 using MD.Home.Sharp.Extensions;
+using MD.Home.Sharp.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 
@@ -17,6 +19,19 @@ namespace MD.Home.Sharp.Controllers
         private readonly CacheManager _cacheManager;
 
         public MainController(CacheManager cacheManager) => _cacheManager = cacheManager;
+
+        [HttpGet("statistics")]
+        public IActionResult CacheStatistics()
+        {
+            return new JsonResult(new
+            {
+                Cache.CacheStatistics.StartTime,
+                Cache.CacheStatistics.HitCount,
+                Cache.CacheStatistics.AverageHitTtfb,
+                Cache.CacheStatistics.MissCount,
+                Cache.CacheStatistics.AverageMissTtfb
+            }, new JsonSerializerOptions {PropertyNamingPolicy = new SnakeCaseNamingPolicy(), WriteIndented = true});
+        }
 
         [HttpGet("data/{chapterId:guid}/{name}")]
         public async Task<IActionResult> FetchNormalImage(Guid chapterId, string name) => await FetchImage(false, chapterId, name);
@@ -104,7 +119,7 @@ namespace MD.Home.Sharp.Controllers
             
             Response.Headers.Add("X-Cache", "HIT");
             Response.Headers.Add("Content-Length", cacheEntry.Content.LongLength.ToString());
-
+            
             return ReturnFile(cacheEntry);
         }
 

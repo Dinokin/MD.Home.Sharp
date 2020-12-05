@@ -40,8 +40,8 @@ namespace MD.Home.Sharp
 
                 options.EnrichDiagnosticContext = (context, httpContext) =>
                 {
-                    httpContext.Items.TryGetValue("StartTime", out var startTime);
-                    httpContext.Items.TryGetValue("TimeTaken", out var timeTaken);
+                    var startTime = httpContext.Items["StartTime"];
+                    var timeTaken = httpContext.Items["TimeTaken"];
 
                     context.Set("TimeTaken", timeTaken ?? (DateTime.UtcNow - (DateTime) startTime!).TotalMilliseconds);
                     context.Set("FilteredPath", httpContext.Request.Path.Value.RemoveToken());
