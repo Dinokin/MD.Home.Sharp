@@ -45,6 +45,6 @@
         <value>DELETE FROM cache_entries WHERE hash IN (SELECT hash FROM cache_entries ORDER BY last_accessed LIMIT $amount);</value>
     </data>
     <data name="AmountOfCacheEntries" xml:space="preserve">
-        <value>SELECT COUNT(ROWID) FROM cache_entries;</value>
+        <value>SELECT COUNT(hash) FROM cache_entries;</value>
     </data>
 </root>

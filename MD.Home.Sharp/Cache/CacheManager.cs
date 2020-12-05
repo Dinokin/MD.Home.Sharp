@@ -30,7 +30,7 @@ namespace MD.Home.Sharp.Cache
             _memoryCache = new MemoryCache(new MemoryCacheOptions {SizeLimit = clientSettings.MaxPagesInMemory});
             
             _insertionQueue = new ConcurrentQueue<CacheEntry>();
-            _insertionTimer = new Timer(InsertionTasks, null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
+            _insertionTimer = new Timer(InsertionTasks, "Timer", TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
         }
 
         public CacheEntry? GetCacheEntry(string url)
@@ -93,8 +93,8 @@ namespace MD.Home.Sharp.Cache
             _memoryCache.Compact(100);
             _memoryCache.Dispose();
             
-            ConsolidateDatabase();
-            
+            InsertionTasks("Disposing");
+
             _cacheEntryDao.Dispose();
             GC.SuppressFinalize(this);
         }
@@ -143,13 +143,15 @@ namespace MD.Home.Sharp.Cache
 
         private void InsertionTasks(object? state)
         {
+            if (_isDisposed && (string?) state == "Timer")
+                return;
+
             try
             {
                 while (_insertionQueue.TryDequeue(out var entry))
                     _cacheEntryDao.InsertCacheEntry(entry);
 
-                if (!_isDisposed)
-                    ConsolidateDatabase();
+                ConsolidateDatabase();
             }
             catch
             {

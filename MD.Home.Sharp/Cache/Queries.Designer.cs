@@ -61,7 +61,7 @@ namespace MD.Home.Sharp.Cache {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to SELECT COUNT(ROWID) FROM cache_entries;.
+        ///   Looks up a localized string similar to SELECT COUNT(hash) FROM cache_entries;.
         /// </summary>
         internal static string AmountOfCacheEntries {
             get {
