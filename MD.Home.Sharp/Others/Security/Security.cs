@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text.RegularExpressions;
 
-namespace MD.Home.Sharp.Others
+namespace MD.Home.Sharp.Others.Security
 {
     internal static class Security
     {

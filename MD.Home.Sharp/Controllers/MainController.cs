@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using MD.Home.Sharp.Cache;
 using MD.Home.Sharp.Extensions;
+using MD.Home.Sharp.Others.Cache;
 using MD.Home.Sharp.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
@@ -17,21 +18,17 @@ namespace MD.Home.Sharp.Controllers
     public sealed class MainController : Controller
     {
         private readonly CacheManager _cacheManager;
+        private readonly CacheStats _cacheStats;
 
-        public MainController(CacheManager cacheManager) => _cacheManager = cacheManager;
-
-        [HttpGet("statistics")]
-        public IActionResult CacheStatistics()
+        public MainController(CacheManager cacheManager, CacheStats cacheStats)
         {
-            return new JsonResult(new
-            {
-                Cache.CacheStatistics.StartTime,
-                Cache.CacheStatistics.HitCount,
-                Cache.CacheStatistics.AverageHitTtfb,
-                Cache.CacheStatistics.MissCount,
-                Cache.CacheStatistics.AverageMissTtfb
-            }, new JsonSerializerOptions {PropertyNamingPolicy = new SnakeCaseNamingPolicy(), WriteIndented = true});
+            _cacheManager = cacheManager;
+            _cacheStats = cacheStats;
         }
+
+        [HttpGet("{action}")]
+        [ResponseCache(NoStore = true)]
+        public IActionResult Statistics() => new JsonResult(_cacheStats.Snapshot, new JsonSerializerOptions {PropertyNamingPolicy = new SnakeCaseNamingPolicy(), WriteIndented = true});
 
         [HttpGet("data/{chapterId:guid}/{name}")]
         public async Task<IActionResult> FetchNormalImage(Guid chapterId, string name) => await FetchImage(false, chapterId, name);

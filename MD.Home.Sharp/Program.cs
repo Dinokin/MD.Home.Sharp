@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 using MD.Home.Sharp.Configuration;
 using MD.Home.Sharp.Exceptions;
 using MD.Home.Sharp.Extensions;
-using MD.Home.Sharp.Others;
+using MD.Home.Sharp.Others.Security;
 using MD.Home.Sharp.Serialization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;

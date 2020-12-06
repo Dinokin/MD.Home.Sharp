@@ -2,8 +2,8 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
-using MD.Home.Sharp.Cache;
 using MD.Home.Sharp.Others;
+using MD.Home.Sharp.Others.Cache;
 using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace MD.Home.Sharp.Filters
@@ -11,6 +11,10 @@ namespace MD.Home.Sharp.Filters
     [SuppressMessage("ReSharper", "ClassNeverInstantiated.Global")]
     internal sealed class HeaderInjector : IResultFilter
     {
+        private readonly CacheStats _cacheStats;
+
+        public HeaderInjector(CacheStats cacheStats) => _cacheStats = cacheStats;
+
         public void OnResultExecuting(ResultExecutingContext context)
         {
             context.HttpContext.Response.Headers.Add("Access-Control-Allow-Origin", "https://mangadex.org");
@@ -26,12 +30,10 @@ namespace MD.Home.Sharp.Filters
             switch (context.HttpContext.Response.Headers["X-Cache"].FirstOrDefault())
             {
                 case "HIT":
-                    CacheStatistics.IncrementHit();
-                    CacheStatistics.IncrementHitTtfb(timeTaken);
+                    _cacheStats.IncrementHit(timeTaken);
                     break;
                 case "MISS":
-                    CacheStatistics.IncrementMiss();
-                    CacheStatistics.IncrementMissTtfb(timeTaken);
+                    _cacheStats.IncrementMiss(timeTaken);
                     break;
             }
 

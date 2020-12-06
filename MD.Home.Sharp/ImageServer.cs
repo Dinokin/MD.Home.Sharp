@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using MD.Home.Sharp.Cache;
 using MD.Home.Sharp.Extensions;
 using MD.Home.Sharp.Filters;
+using MD.Home.Sharp.Others.Cache;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,6 +16,8 @@ namespace MD.Home.Sharp
     {
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddRouting(options => options.LowercaseUrls = true);
+            
             services.AddControllers(options =>
             {
                 options.Filters.Add<ReferrerValidator>();
@@ -23,6 +26,7 @@ namespace MD.Home.Sharp
             });
 
             services.AddSingleton<CacheManager>();
+            services.AddSingleton<CacheStats>();
         }
 
         public void Configure(IApplicationBuilder application, IWebHostEnvironment environment)
