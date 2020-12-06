@@ -24,7 +24,7 @@
         <value>PRAGMA wal_autocheckpoint=0;</value>
     </data>
     <data name="SetCacheSize" xml:space="preserve">
-        <value>PRAGMA cache_size=-51200;</value>
+        <value>PRAGMA cache_size=-512000;</value>
     </data>
     <data name="CreateDatabase" xml:space="preserve">
         <value>BEGIN; CREATE TABLE cache_entries (hash CHARACTER(32) PRIMARY KEY, content_type VARCHAR(20) NOT NULL, last_modified DATETIME NOT NULL, last_accessed DATETIME NOT NULL, content BLOB NOT NULL); CREATE INDEX last_accessed_index ON cache_entries (last_accessed); COMMIT;</value>>
