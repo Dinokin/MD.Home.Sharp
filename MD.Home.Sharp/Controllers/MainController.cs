@@ -37,12 +37,12 @@ namespace MD.Home.Sharp.Controllers
         [HttpGet("data-saver/{chapterId:length(32)}/{fileName}")]
         public async Task<IActionResult> FetchDataSaverImage(string chapterId, string fileName) => await FetchImage(true, chapterId, fileName);
         
-        [SuppressMessage("ReSharper", "UnusedParameter.Global")]
         [HttpGet("{token}/data/{chapterId:length(32)}/{fileName}")]
+        [SuppressMessage("ReSharper", "UnusedParameter.Global")]
         public async Task<IActionResult> FetchTokenizedNormalImage(string token, string chapterId, string fileName) => await FetchImage(false, chapterId, fileName);
 
-        [SuppressMessage("ReSharper", "UnusedParameter.Global")]
         [HttpGet("{token}/data-saver/{chapterId:length(32)}/{fileName}")]
+        [SuppressMessage("ReSharper", "UnusedParameter.Global")]
         public async Task<IActionResult> FetchTokenizedDataSaverImage(string token, string chapterId, string fileName) => await FetchImage(true, chapterId, fileName); 
         
         private async Task<IActionResult> FetchImage(bool dataSaver, string chapterId, string fileName)

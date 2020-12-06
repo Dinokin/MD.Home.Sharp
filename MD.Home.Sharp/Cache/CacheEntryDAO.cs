@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Data;
 using System.IO;
-using MD.Home.Sharp.Configuration;
 using MD.Home.Sharp.Extensions;
 using Microsoft.Data.Sqlite;
 
@@ -27,7 +26,7 @@ namespace MD.Home.Sharp.Cache
 
         private bool _isDisposed;
 
-        public CacheEntryDao(FileInfo dataSource, ClientSettings clientSettings)
+        public CacheEntryDao(FileInfo dataSource)
         {
             var connectionStringBuilder = new SqliteConnectionStringBuilder
             {
@@ -36,7 +35,7 @@ namespace MD.Home.Sharp.Cache
                 Cache = SqliteCacheMode.Shared
             };
 
-            _connectionPool = new ConnectionPool(connectionStringBuilder.ToString(), clientSettings.MaxRamCacheSizeInMebibytes * 1024);
+            _connectionPool = new ConnectionPool(connectionStringBuilder.ToString());
 
             if (!dataSource.Exists)
                 CreateDatabase();

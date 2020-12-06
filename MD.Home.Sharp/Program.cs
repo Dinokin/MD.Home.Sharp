@@ -119,9 +119,6 @@ namespace MD.Home.Sharp
             if (ClientSettings.MaxCacheSizeInMebibytes < 1024)
                 throw new ClientSettingsException("Invalid max cache size, must be >= 1024 MiB (1GiB)");
 
-            if (ClientSettings.MaxRamCacheSizeInMebibytes < 128)
-                throw new ClientSettingsException("Invalid ram cache size, must be >= 128 MiB");
-
             if (ClientSettings.GracefulShutdownWaitSeconds < 60)
                 throw new ClientSettingsException("Graceful shutdown wait seconds needs to be at least 60 seconds");
         }

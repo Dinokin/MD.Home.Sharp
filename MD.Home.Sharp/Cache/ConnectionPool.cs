@@ -8,15 +8,13 @@ namespace MD.Home.Sharp.Cache
     internal class ConnectionPool : IDisposable
     {
         private readonly string _connectionString;
-        private readonly ulong _cacheSize;
         private readonly ConcurrentQueue<SqliteConnection> _pool;
 
         private bool _isDisposed;
 
-        public ConnectionPool(string connectionString, ulong cacheSizeInKibibytes)
+        public ConnectionPool(string connectionString)
         {
             _connectionString = connectionString;
-            _cacheSize = cacheSizeInKibibytes;
             _pool = new ConcurrentQueue<SqliteConnection>();
         }
         
@@ -58,8 +56,6 @@ namespace MD.Home.Sharp.Cache
             connection.Open();
 
             using var command = new SqliteCommand(Queries.SetCacheSize, connection);
-            command.Parameters.Add(new SqliteParameter("$size", _cacheSize));
-            
             command.ExecuteNonQuery();
 
             return connection;

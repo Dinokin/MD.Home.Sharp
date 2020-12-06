@@ -76,7 +76,7 @@ namespace MD.Home.Sharp.Filters
                 return;
             }
             
-            if (context.ActionArguments.TryGetValue("chapterId", out var chapterId) && serializedToken.Hash != ((Guid) chapterId).ToString("N"))
+            if (context.ActionArguments.TryGetValue("chapterId", out var chapterId) && serializedToken.Hash != (string) chapterId)
             {
                 Log.Logger.Warning($"Request for {path} rejected for inapplicable token");
 
