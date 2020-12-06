@@ -140,13 +140,11 @@ namespace MD.Home.Sharp.Cache
         {
             using var command1 = new SqliteCommand(Queries.SetJournalMode);
             using var command2 = new SqliteCommand(Queries.DisableAutocheckpoint);
-            using var command3 = new SqliteCommand(Queries.SetCacheSize);
-            using var command4 = new SqliteCommand(Queries.CreateDatabase);
+            using var command3 = new SqliteCommand(Queries.CreateDatabase);
 
             ExecuteQueryWithoutResult(command1);
             ExecuteQueryWithoutResult(command2);
             ExecuteQueryWithoutResult(command3);
-            ExecuteQueryWithoutResult(command4);
         }
 
         private void ExecuteQueryWithoutResult(SqliteCommand command)

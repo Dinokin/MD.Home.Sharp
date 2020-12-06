@@ -115,7 +115,7 @@ namespace MD.Home.Sharp.Cache {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to PRAGMA cache_size=0;.
+        ///   Looks up a localized string similar to PRAGMA cache_size=-51200;.
         /// </summary>
         internal static string SetCacheSize {
             get {

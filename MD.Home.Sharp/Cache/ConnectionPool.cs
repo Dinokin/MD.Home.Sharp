@@ -53,9 +53,11 @@ namespace MD.Home.Sharp.Cache
         private SqliteConnection BuildConnection()
         {
             var connection = new SqliteConnection(_connectionString) {DefaultTimeout = 90};
-            
             connection.Open();
-            
+
+            using var command = new SqliteCommand(Queries.SetCacheSize, connection);
+            command.ExecuteNonQuery();
+
             return connection;
         }
 
