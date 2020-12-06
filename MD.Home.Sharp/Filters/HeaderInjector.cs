@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using MD.Home.Sharp.Others;
 using MD.Home.Sharp.Others.Cache;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace MD.Home.Sharp.Filters
@@ -23,11 +24,24 @@ namespace MD.Home.Sharp.Filters
             context.HttpContext.Response.Headers.Add("X-Content-Type-Options", "nosniff");
             context.HttpContext.Response.Headers.Add("Server", $"MD.Home.Sharp 1.0.0 {Constants.ClientBuild}");
             context.HttpContext.Response.Headers.Add("Date", DateTimeOffset.UtcNow.ToString("O"));
+            context.HttpContext.Response.Headers.Add("X-Time-Taken", CalculateTimeTaken(context.HttpContext));
+        }
+
+        public void OnResultExecuted(ResultExecutedContext context) { }
+
+        private string CalculateTimeTaken(HttpContext context)
+        {
+            var timeTaken = (DateTime.UtcNow - (DateTime) context.Items["StartTime"]!);
+            context.Items.Add("TimeTaken", timeTaken.TotalMilliseconds);
             
-            var timeTaken = (DateTime.UtcNow - (DateTime) context.HttpContext.Items["StartTime"]!);
-            context.HttpContext.Items.Add("TimeTaken", timeTaken.TotalMilliseconds);
-            
-            switch (context.HttpContext.Response.Headers["X-Cache"].FirstOrDefault())
+            IncrementCacheCounters(context, timeTaken);
+
+            return timeTaken.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
+        }
+
+        private void IncrementCacheCounters(HttpContext context, TimeSpan timeTaken)
+        {
+            switch (context.Response.Headers["X-Cache"].FirstOrDefault())
             {
                 case "HIT":
                     _cacheStats.IncrementHit(timeTaken);
@@ -36,10 +50,6 @@ namespace MD.Home.Sharp.Filters
                     _cacheStats.IncrementMiss(timeTaken);
                     break;
             }
-
-            context.HttpContext.Response.Headers.Add("X-Time-Taken", timeTaken.TotalMilliseconds.ToString(CultureInfo.InvariantCulture));
         }
-
-        public void OnResultExecuted(ResultExecutedContext context) { }
     }
 }

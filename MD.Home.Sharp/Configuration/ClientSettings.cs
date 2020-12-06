@@ -10,6 +10,7 @@ namespace MD.Home.Sharp.Configuration
         public ushort ClientExternalPort { get; set; } = 443;
         public string ClientSecret { get; set; } = string.Empty;
         public ulong MaxCacheSizeInMebibytes { get; set; } = 1024;
+        public ulong MaxRamCacheSizeInMebibytes { get; set; } = 128;
         public ushort GracefulShutdownWaitSeconds { get; set; } = 60;
     }
 }

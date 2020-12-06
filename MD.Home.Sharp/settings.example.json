@@ -3,7 +3,7 @@
   "ClientPort": 443,
   "ClientExternalPort": 443,
   "ClientSecret": "please-insert-your-secret-here-oniichan",
-  "MaxCacheSizeInMebibytes": 100000,
-  "MaxPagesInMemory": 1000,
+  "MaxCacheSizeInMebibytes": 10000,
+  "MaxRamCacheSizeInMebibytes": 128,
   "GracefulShutdownWaitSeconds": 60
 }

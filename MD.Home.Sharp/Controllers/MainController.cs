@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using MD.Home.Sharp.Cache;
 using MD.Home.Sharp.Extensions;
 using MD.Home.Sharp.Others.Cache;
-using MD.Home.Sharp.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 
@@ -19,34 +18,36 @@ namespace MD.Home.Sharp.Controllers
     {
         private readonly CacheManager _cacheManager;
         private readonly CacheStats _cacheStats;
+        private readonly JsonSerializerOptions _serializerOptions;
 
-        public MainController(CacheManager cacheManager, CacheStats cacheStats)
+        public MainController(CacheManager cacheManager, CacheStats cacheStats, JsonSerializerOptions serializerOptions)
         {
             _cacheManager = cacheManager;
             _cacheStats = cacheStats;
+            _serializerOptions = serializerOptions;
         }
-
+        
         [HttpGet("{action}")]
         [ResponseCache(NoStore = true)]
-        public IActionResult Statistics() => new JsonResult(_cacheStats.Snapshot, new JsonSerializerOptions {PropertyNamingPolicy = new SnakeCaseNamingPolicy(), WriteIndented = true});
+        public IActionResult Stats() => new JsonResult(_cacheStats.Snapshot, _serializerOptions);
 
-        [HttpGet("data/{chapterId:guid}/{name}")]
-        public async Task<IActionResult> FetchNormalImage(Guid chapterId, string name) => await FetchImage(false, chapterId, name);
+        [HttpGet("data/{chapterId:length(32)}/{fileName}")]
+        public async Task<IActionResult> FetchNormalImage(string chapterId, string fileName) => await FetchImage(false, chapterId, fileName);
 
-        [HttpGet("data-saver/{chapterId:guid}/{name}")]
-        public async Task<IActionResult> FetchDataSaverImage(Guid chapterId, string name) => await FetchImage(true, chapterId, name);
+        [HttpGet("data-saver/{chapterId:length(32)}/{fileName}")]
+        public async Task<IActionResult> FetchDataSaverImage(string chapterId, string fileName) => await FetchImage(true, chapterId, fileName);
         
-        [HttpGet("{token}/data/{chapterId:guid}/{name}")]
         [SuppressMessage("ReSharper", "UnusedParameter.Global")]
-        public async Task<IActionResult> FetchTokenizedNormalImage(string token, Guid chapterId, string name) => await FetchImage(false, chapterId, name);
+        [HttpGet("{token}/data/{chapterId:length(32)}/{fileName}")]
+        public async Task<IActionResult> FetchTokenizedNormalImage(string token, string chapterId, string fileName) => await FetchImage(false, chapterId, fileName);
 
-        [HttpGet("{token}/data-saver/{chapterId:guid}/{name}")]
         [SuppressMessage("ReSharper", "UnusedParameter.Global")]
-        public async Task<IActionResult> FetchTokenizedDataSaverImage(string token, Guid chapterId, string name) => await FetchImage(true, chapterId, name); 
+        [HttpGet("{token}/data-saver/{chapterId:length(32)}/{fileName}")]
+        public async Task<IActionResult> FetchTokenizedDataSaverImage(string token, string chapterId, string fileName) => await FetchImage(true, chapterId, fileName); 
         
-        private async Task<IActionResult> FetchImage(bool dataSaver, Guid chapterId, string name)
+        private async Task<IActionResult> FetchImage(bool dataSaver, string chapterId, string fileName)
         {
-            var url = $"/{(dataSaver ? "data-saver" : "data")}/{chapterId:N}/{name}";
+            var url = $"/{(dataSaver ? "data-saver" : "data")}/{chapterId}/{fileName}";
             
             var cacheEntry = _cacheManager.GetCacheEntry(url);
 

@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using MD.Home.Sharp.Configuration;
 using MD.Home.Sharp.Exceptions;
 using MD.Home.Sharp.Extensions;
+using MD.Home.Sharp.Others.Cache;
 using MD.Home.Sharp.Others.Security;
 using MD.Home.Sharp.Serialization;
 using Microsoft.AspNetCore.Hosting;
@@ -32,6 +33,7 @@ namespace MD.Home.Sharp
         
         private static readonly IConfiguration Configuration;
         private static readonly ClientSettings ClientSettings;
+        private static readonly CacheStats CacheStats;
         private static readonly JsonSerializerOptions SerializerOptions;
 
         private static bool _stopRequested;
@@ -42,6 +44,7 @@ namespace MD.Home.Sharp
             var namingPolicy = new SnakeCaseNamingPolicy();
 
             ClientSettings = new ClientSettings();
+            CacheStats = new CacheStats();
             SerializerOptions = new JsonSerializerOptions {PropertyNamingPolicy = namingPolicy, DictionaryKeyPolicy = namingPolicy};
             
             Configuration = new ConfigurationBuilder().AddJsonFile("settings.json", false).Build();
@@ -107,14 +110,20 @@ namespace MD.Home.Sharp
             if (!ClientSettings.ClientSecret.IsValidSecret())
                 throw new ClientSettingsException("API Secret is invalid, must be 52 alphanumeric characters");
 
-            if (ClientSettings.ClientPort == 0)
+            if (ClientSettings.ClientPort == 0 || ClientSettings.ClientExternalPort == 0)
                 throw new ClientSettingsException("Invalid port number");
 
-            if (Constants.ReservedPorts.Any(port => port == ClientSettings.ClientPort))
+            if (Constants.ReservedPorts.Any(port => port == ClientSettings.ClientPort || port == ClientSettings.ClientExternalPort))
                 throw new ClientSettingsException("Unsafe port number");
 
             if (ClientSettings.MaxCacheSizeInMebibytes < 1024)
                 throw new ClientSettingsException("Invalid max cache size, must be >= 1024 MiB (1GiB)");
+
+            if (ClientSettings.MaxRamCacheSizeInMebibytes < 128)
+                throw new ClientSettingsException("Invalid ram cache size, must be >= 128 MiB");
+
+            if (ClientSettings.GracefulShutdownWaitSeconds < 60)
+                throw new ClientSettingsException("Graceful shutdown wait seconds needs to be at least 60 seconds");
         }
 
         [SuppressMessage("ReSharper", "AccessToDisposedClosure")]
@@ -160,6 +169,7 @@ namespace MD.Home.Sharp
                     builder.ConfigureServices(services =>
                     {
                         services.AddSingleton(typeof(ClientSettings), ClientSettings);
+                        services.AddSingleton(typeof(CacheStats), CacheStats);
                         services.AddSingleton(typeof(JsonSerializerOptions), SerializerOptions);
                     });
 

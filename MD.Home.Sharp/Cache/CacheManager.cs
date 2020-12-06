@@ -29,7 +29,7 @@ namespace MD.Home.Sharp.Cache
         {
             _maxCacheSize = Convert.ToUInt64(clientSettings.MaxCacheSizeInMebibytes * 1024 * 1024);
             _cacheFile = new FileInfo(Constants.CacheFile);
-            _cacheEntryDao = new CacheEntryDao(_cacheFile);
+            _cacheEntryDao = new CacheEntryDao(_cacheFile, clientSettings);
             
             _commandQueue = new ConcurrentQueue<(CommandType, CacheEntry)>();
             _queueTimer = new Timer(ExecuteCommands, "Timer", TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
