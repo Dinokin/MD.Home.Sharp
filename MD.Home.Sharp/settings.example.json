@@ -1,8 +1,0 @@
-{
-  "ClientHostname": "0.0.0.0",
-  "ClientPort": 443,
-  "ClientExternalPort": 443,
-  "ClientSecret": "please-insert-your-secret-here-oniichan",
-  "MaxCacheSizeInMebibytes": 10000,
-  "GracefulShutdownWaitSeconds": 60
-}
